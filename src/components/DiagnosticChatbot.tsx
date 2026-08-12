@@ -135,7 +135,7 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
             </div>
           )}
 
-          {messages.map((msg) => (
+          {messages.map((msg: any) => (
             <div
               key={msg.id}
               className={`flex flex-col ${
@@ -156,6 +156,17 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
                   <span>Technician Prompt</span>
                 )}
               </div>
+
+              {/* Reasoning Block for Chain-of-Thought Models (DeepSeek-R1) */}
+              {msg.reasoning && (
+                <div className="w-full max-w-[95%] mb-2 p-3 bg-slate-950/90 rounded-xl border border-cyan-800/50 text-slate-400 text-[11px] italic font-mono whitespace-pre-wrap shadow-inner">
+                  <span className="text-[#06B6D4] font-bold not-italic flex items-center gap-1.5 mb-1 text-[10px] uppercase">
+                    <Cpu className="w-3.5 h-3.5" />
+                    System Diagnostics (Internal Reasoning Stream):
+                  </span>
+                  {msg.reasoning}
+                </div>
+              )}
 
               <div
                 className={`max-w-[88%] leading-relaxed ${
