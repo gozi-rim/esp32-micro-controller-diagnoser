@@ -8,8 +8,7 @@ import {
   Sparkles,
   Loader2,
   Cpu,
-  Trash2,
-  MessageSquare
+  Trash2
 } from "lucide-react";
 
 interface Message {
@@ -24,6 +23,7 @@ interface DiagnosticChatbotProps {
 }
 
 export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
+  const [selectedModel, setSelectedModel] = useState<"nvidia-llama" | "nvidia-deepseek">("nvidia-llama");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "initial-greeting",
@@ -66,11 +66,12 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
     setMessages((prev) => [...prev, initialAssistantMsg]);
 
     try {
-      // Send message history to /api/chat streaming endpoint
+      // Send message history + modelId to /api/chat streaming endpoint
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          modelId: selectedModel,
           messages: newMessages.map((m) => ({
             role: m.role,
             content: m.content
@@ -145,7 +146,7 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Drawer Header */}
+        {/* Drawer Header with Model Selector */}
         <div className="p-4 sm:p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-cyan-950 text-[#06B6D4] border border-cyan-800/80 shadow-md">
@@ -156,12 +157,19 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
                 <h3 className="text-sm font-bold text-white font-sans">
                   AI Co-Pilot
                 </h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-[#06B6D4] border border-cyan-800 uppercase">
-                  ECE 515.2
-                </span>
+
+                {/* Sleek Model Selector Dropdown */}
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value as any)}
+                  className="bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-cyan-400 outline-none cursor-pointer"
+                >
+                  <option value="nvidia-llama">Llama 3.1 70B (NVIDIA)</option>
+                  <option value="nvidia-deepseek">DeepSeek-R1 (NVIDIA)</option>
+                </select>
               </div>
-              <p className="text-[11px] font-mono text-slate-400">
-                NVIDIA NIM Llama-3.1 70B Engine
+              <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                NVIDIA NIM Universal Engine
               </p>
             </div>
           </div>
@@ -198,7 +206,11 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
                 {msg.role === "assistant" ? (
                   <>
                     <Sparkles className="w-3 h-3 text-[#06B6D4]" />
-                    <span>ESP32 AI Co-Pilot</span>
+                    <span>
+                      {selectedModel === "nvidia-deepseek"
+                        ? "DeepSeek-R1 AI"
+                        : "Llama 3.1 70B AI"}
+                    </span>
                   </>
                 ) : (
                   <span>Technician Prompt</span>
@@ -257,7 +269,9 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
             <span className="flex items-center gap-1">
               <Cpu className="w-3 h-3 text-[#06B6D4]" /> ECE 515.2 Heuristic Agent
             </span>
-            <span>NVIDIA NIM Powered</span>
+            <span>
+              {selectedModel === "nvidia-deepseek" ? "DeepSeek-R1" : "Llama-3.1-70B"}
+            </span>
           </div>
         </form>
       </div>

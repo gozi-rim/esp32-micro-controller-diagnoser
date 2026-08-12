@@ -4,13 +4,19 @@ import OpenAI from "openai";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { symptom, category } = body;
+    const { symptom, category, modelId } = body;
 
     if (!symptom || typeof symptom !== "string") {
       return NextResponse.json(
         { error: "Symptom query is required" },
         { status: 400 }
       );
+    }
+
+    // Dynamic NVIDIA NIM Model Selection
+    let targetModel = "meta/llama-3.1-70b-instruct";
+    if (modelId === "nvidia-deepseek") {
+      targetModel = "deepseek-ai/deepseek-r1";
     }
 
     const apiKey = process.env.NVIDIA_API_KEY;
@@ -30,7 +36,7 @@ export async function POST(req: NextRequest) {
     });
 
     const completion = await openai.chat.completions.create({
-      model: "meta/llama-3.1-70b-instruct",
+      model: targetModel,
       messages: [
         {
           role: "system",
@@ -49,7 +55,16 @@ export async function POST(req: NextRequest) {
     });
 
     const rawContent = completion.choices[0]?.message?.content || "{}";
-    const parsedData = JSON.parse(rawContent);
+    let parsedData: any = {};
+    try {
+      parsedData = JSON.parse(rawContent);
+    } catch {
+      parsedData = {
+        diagnosisTitle: `Heuristic Analysis: ${symptom}`,
+        rootCause: rawContent.slice(0, 250),
+        engineeringSolution: "Inspect hardware voltage levels and serial logs."
+      };
+    }
 
     return NextResponse.json({
       diagnosisTitle:

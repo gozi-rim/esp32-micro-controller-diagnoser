@@ -3,7 +3,8 @@ import OpenAI from "openai";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages, modelId } = body;
 
     const apiKey = process.env.NVIDIA_API_KEY;
 
@@ -12,6 +13,12 @@ export async function POST(req: NextRequest) {
         { error: "NVIDIA API Key is missing" },
         { status: 500 }
       );
+    }
+
+    // Dynamic NVIDIA NIM Model Selection
+    let targetModel = "meta/llama-3.1-70b-instruct";
+    if (modelId === "nvidia-deepseek") {
+      targetModel = "deepseek-ai/deepseek-r1";
     }
 
     const openai = new OpenAI({
@@ -29,7 +36,7 @@ export async function POST(req: NextRequest) {
     ];
 
     const stream = await openai.chat.completions.create({
-      model: "meta/llama-3.1-70b-instruct",
+      model: targetModel,
       messages: formattedMessages,
       temperature: 0.3,
       max_tokens: 1024,

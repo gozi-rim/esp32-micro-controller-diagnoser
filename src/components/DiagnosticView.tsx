@@ -42,6 +42,7 @@ export function DiagnosticView({
   onReset
 }: DiagnosticViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedModel, setSelectedModel] = useState<"nvidia-llama" | "nvidia-deepseek">("nvidia-llama");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStage, setLoadingStage] = useState(
     "Extracting hardware parameters..."
@@ -84,23 +85,28 @@ export function DiagnosticView({
     }
   }, [currentNode]);
 
-  // Trigger Heuristic AI Analysis
+  // Trigger Heuristic AI Analysis with selected model
   const handleRunHeuristicAnalysis = async () => {
     setIsAnalyzing(true);
     setLoadingStage("Extracting hardware parameters...");
 
     const stageTimer = setTimeout(() => {
-      setLoadingStage("Cross-referencing domain vectors via LLM...");
+      setLoadingStage(
+        `Cross-referencing domain vectors via ${
+          selectedModel === "nvidia-deepseek" ? "DeepSeek-R1" : "Llama-3.1-70B"
+        }...`
+      );
     }, 800);
 
     try {
-      // Call backend /api/diagnose route
+      // Call backend /api/diagnose route with modelId payload
       const res = await fetch("/api/diagnose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           symptom: searchQuery,
-          category: currentNode?.category
+          category: currentNode?.category,
+          modelId: selectedModel
         })
       });
 
@@ -285,7 +291,7 @@ export function DiagnosticView({
               </div>
             </div>
           ) : isZeroMatch ? (
-            /* EMPTY STATE & CUSTOM HEURISTIC ANALYSIS CTA CARD */
+            /* EMPTY STATE & CUSTOM HEURISTIC ANALYSIS CTA CARD WITH MODEL SELECTOR */
             <div className="w-full p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-cyan-950 hover:border-cyan-800/80 transition-all text-center space-y-4 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#06B6D4]/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -300,8 +306,23 @@ export function DiagnosticView({
                 <p className="text-xs text-slate-400 leading-relaxed font-sans">
                   The rule engine does not have a hardcoded match for &quot;
                   <span className="text-slate-200 font-semibold">{searchQuery}</span>
-                  &quot;. Launch Generative AI Heuristic Analysis to synthesize hardware domain vectors.
+                  &quot;. Select an LLM engine and launch Generative AI Heuristic Analysis.
                 </p>
+              </div>
+
+              {/* Model Selector Dropdown above CTA Button */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <label className="text-xs font-mono text-slate-400">
+                  Select Engine:
+                </label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value as any)}
+                  className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded-md px-2.5 py-1.5 focus:ring-1 focus:ring-cyan-400 outline-none font-mono cursor-pointer"
+                >
+                  <option value="nvidia-llama">Llama 3.1 70B (NVIDIA)</option>
+                  <option value="nvidia-deepseek">DeepSeek-R1 (NVIDIA)</option>
+                </select>
               </div>
 
               <button
