@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DiagnosisNode } from "@/data/knowledgeBase";
 import {
   CheckCircle2,
@@ -14,7 +14,9 @@ import {
   Terminal,
   ShieldCheck,
   Cpu,
-  Bookmark
+  Bookmark,
+  Loader2,
+  Sparkles
 } from "lucide-react";
 
 interface DiagnosisReportViewProps {
@@ -34,6 +36,45 @@ export function DiagnosisReportView({
 }: DiagnosisReportViewProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [isExported, setIsExported] = useState(false);
+  const [aiRootCause, setAiRootCause] = useState<string | null>(null);
+  const [aiSteps, setAiSteps] = useState<string[] | null>(null);
+  const [isLoadingAi, setIsLoadingAi] = useState(false);
+
+  useEffect(() => {
+    if (!customLogs || customLogs.length === 0) return;
+
+    let isMounted = true;
+    const fetchCustomAnalysis = async () => {
+      setIsLoadingAi(true);
+      try {
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customLogs })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (isMounted && data.rootCause && Array.isArray(data.remediationSteps)) {
+            setAiRootCause(data.rootCause);
+            setAiSteps(data.remediationSteps);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch custom AI analysis:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingAi(false);
+        }
+      }
+    };
+
+    fetchCustomAnalysis();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [customLogs]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -49,8 +90,11 @@ export function DiagnosisReportView({
       category: currentNode.category,
       severity: currentNode.severity,
       symptomSummary: currentNode.symptomSummary,
-      rootCause: currentNode.rootCause,
-      engineeringSolution: currentNode.engineeringSolution,
+      rootCause: aiRootCause || currentNode.rootCause,
+      engineeringSolution: {
+        ...currentNode.engineeringSolution,
+        steps: aiSteps || currentNode.engineeringSolution.steps
+      },
       recordedTechnicianCustomLogs: customLogs,
       decisionPathHistory: history
     };
@@ -163,38 +207,61 @@ export function DiagnosisReportView({
             )}
 
             {/* Root Cause Breakdown */}
-            <div className="p-5 rounded-xl bg-slate-900/90 border border-card-border space-y-2">
+            <div className="p-5 rounded-xl bg-slate-900/90 border border-card-border space-y-2 relative overflow-hidden">
               <h4 className="text-xs font-bold font-mono text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4" />
                 Electronic Engineering Root Cause Analysis
               </h4>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-                {currentNode.rootCause}
-              </p>
+              {isLoadingAi ? (
+                <div className="flex items-center gap-3 py-3 text-neon-cyan text-xs font-mono animate-pulse">
+                  <Loader2 className="w-4 h-4 animate-spin text-neon-cyan shrink-0" />
+                  <span>Synthesizing Custom Hardware Heuristics...</span>
+                </div>
+              ) : (
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+                  {aiRootCause || currentNode.rootCause}
+                </p>
+              )}
             </div>
           </div>
 
           {/* Action Steps Checklist & Wiring / Code Fix */}
           <div className="w-full bg-surface-card border border-card-border rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 font-mono">
-              <CheckCircle2 className="w-5 h-5 text-emerald-green" />
-              Step-by-Step Engineering Remediation
+            <h3 className="text-lg font-bold text-white flex items-center justify-between gap-2 font-mono">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-green" />
+                Step-by-Step Engineering Remediation
+              </span>
+              {aiSteps && (
+                <span className="text-[11px] font-mono text-neon-cyan px-2.5 py-1 rounded bg-cyan-950 border border-cyan-800 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 fill-current" /> AI Synthesized
+                </span>
+              )}
             </h3>
 
             {/* Checklist */}
-            <ul className="space-y-3">
-              {currentNode.engineeringSolution.steps.map((step, idx) => (
-                <li
-                  key={idx}
-                  className="flex items-start gap-3 p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-sm text-slate-200"
-                >
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-950 text-neon-cyan text-xs font-mono font-bold shrink-0 border border-cyan-800/60">
-                    {idx + 1}
-                  </span>
-                  <span className="leading-relaxed pt-0.5">{step}</span>
-                </li>
-              ))}
-            </ul>
+            {isLoadingAi ? (
+              <div className="space-y-3 py-4 text-center">
+                <div className="inline-flex items-center gap-2 text-xs font-mono text-cyan-400 bg-cyan-950/80 px-4 py-2 rounded-xl border border-cyan-800 animate-pulse">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating tailored hardware remediation steps...
+                </div>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {(aiSteps || currentNode.engineeringSolution.steps).map((step, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-start gap-3 p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-sm text-slate-200"
+                  >
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-950 text-neon-cyan text-xs font-mono font-bold shrink-0 border border-cyan-800/60">
+                      {idx + 1}
+                    </span>
+                    <span className="leading-relaxed pt-0.5">{step}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             {/* Circuit Diagram Note */}
             {currentNode.engineeringSolution.circuitDiagramNote && (
