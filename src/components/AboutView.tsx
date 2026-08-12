@@ -27,16 +27,22 @@ export function AboutView() {
       isHighlighted: true
     },
     {
-      name: "[Full Name Pending]",
+      name: "Ordu ThankGod Meyi",
       matric: "U2021/3020045",
       role: "Member",
-      isHighlighted: false
+      isHighlighted: true
     },
     {
-      name: "[Full Name Pending]",
+      name: "Paul Godwin",
       matric: "U2021/3020047",
       role: "Member",
-      isHighlighted: false
+      isHighlighted: true
+    },
+    {
+      name: "Dickson Jessica Emem-Abasi",
+      matric: "U2021/3020052",
+      role: "Member",
+      isHighlighted: true
     },
     {
       name: "[Full Name Pending]",
@@ -59,12 +65,6 @@ export function AboutView() {
     {
       name: "[Full Name Pending]",
       matric: "U2021/3020051",
-      role: "Member",
-      isHighlighted: false
-    },
-    {
-      name: "[Full Name Pending]",
-      matric: "U2021/3020052",
       role: "Member",
       isHighlighted: false
     },
