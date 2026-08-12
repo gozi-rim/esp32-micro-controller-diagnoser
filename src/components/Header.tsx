@@ -8,8 +8,6 @@ import {
   ChevronRight,
   User,
   Settings,
-  Bot,
-  Sparkles,
   HelpCircle,
   LogOut,
   ChevronDown
@@ -21,7 +19,6 @@ interface HeaderProps {
   historyLength: number;
   currentCategoryName?: string;
   activeView: string;
-  onToggleChatbot?: () => void;
 }
 
 export function Header({
@@ -29,8 +26,7 @@ export function Header({
   onResetDiagnostic,
   historyLength,
   currentCategoryName,
-  activeView,
-  onToggleChatbot
+  activeView
 }: HeaderProps) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
@@ -92,20 +88,8 @@ export function Header({
         </div>
       </div>
 
-      {/* Right Section: AI Co-Pilot Button, Reset Button, ECE 515.2 Badge & User Dropdown */}
+      {/* Right Section: Reset Button, ECE 515.2 Badge & User Dropdown */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Interactive AI Co-Pilot Drawer Toggle Button */}
-        {onToggleChatbot && (
-          <button
-            onClick={onToggleChatbot}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 text-[#06B6D4] border border-cyan-800/80 transition-all font-mono text-xs font-bold shadow-lg shadow-cyan-950/40"
-          >
-            <Bot className="w-4 h-4 text-[#06B6D4] animate-pulse" />
-            <span className="hidden sm:inline">AI Co-Pilot</span>
-            <Sparkles className="w-3 h-3 text-amber-400 fill-current" />
-          </button>
-        )}
-
         {/* Reset Diagnostic Button */}
         <button
           onClick={onResetDiagnostic}

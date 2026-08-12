@@ -10,7 +10,6 @@ import { DiagnosisReportView } from "./DiagnosisReportView";
 import { HardwareLogsView } from "./HardwareLogsView";
 import { KnowledgeBaseView } from "./KnowledgeBaseView";
 import { AboutView } from "./AboutView";
-import { DiagnosticChatbot } from "./DiagnosticChatbot";
 
 export function ExpertSystem() {
   const [activeView, setActiveView] = useState<
@@ -19,7 +18,6 @@ export function ExpertSystem() {
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   const [currentNodeId, setCurrentNodeId] = useState<string>(
     knowledgeBase.initialQuestionId
@@ -128,7 +126,6 @@ export function ExpertSystem() {
               : undefined
           }
           activeView={activeView}
-          onToggleChatbot={() => setIsChatbotOpen(!isChatbotOpen)}
         />
 
         {/* Scrollable Main Workspace Area (Zero Dead Side Whitespace) */}
@@ -185,12 +182,6 @@ export function ExpertSystem() {
           {activeView === "about" && <AboutView />}
         </main>
       </div>
-
-      {/* Interactive AI Co-Pilot Slide-out Drawer */}
-      <DiagnosticChatbot
-        isOpen={isChatbotOpen}
-        onClose={() => setIsChatbotOpen(false)}
-      />
     </div>
   );
 }

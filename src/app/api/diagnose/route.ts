@@ -1,12 +1,4 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
-
-const nvidia = createOpenAICompatible({
-  name: 'nvidia',
-  baseURL: 'https://integrate.api.nvidia.com/v1',
-  apiKey: process.env.NVIDIA_API_KEY,
-});
 
 export async function POST(req: Request) {
   try {
@@ -25,27 +17,52 @@ export async function POST(req: Request) {
       targetModel = 'deepseek-ai/deepseek-r1';
     }
 
-    const { text } = await generateText({
-      model: nvidia.chatModel(targetModel),
-      system:
-        'You are a Senior Embedded Systems Engineer and university professor specializing in ESP32 microcontrollers, ESP-NOW, and IoT circuitry. Diagnose the provided hardware failure symptom. You must respond in pure, raw JSON format with exactly three string keys: diagnosisTitle, rootCause, and engineeringSolution.',
-      prompt: `Diagnose this ESP32 hardware fault symptom: "${symptom}". Category context: ${
-        category || 'General Embedded Hardware'
-      }.`,
-    });
+    const apiKey = process.env.NVIDIA_API_KEY;
+
+    let text = '';
+    if (apiKey) {
+      const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: targetModel,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a Senior Embedded Systems Engineer and university professor specializing in ESP32 microcontrollers, ESP-NOW, and IoT circuitry. Diagnose the provided hardware failure symptom. You must respond in pure, raw JSON format with exactly three string keys: diagnosisTitle, rootCause, and engineeringSolution.'
+            },
+            {
+              role: 'user',
+              content: `Diagnose this ESP32 hardware fault symptom: "${symptom}". Category context: ${category || 'General Embedded Hardware'}.`
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 1024,
+        })
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        text = json.choices?.[0]?.message?.content || '';
+      }
+    }
 
     let parsedData: any = {};
-    try {
-      // Clean potential code block fences
-      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      parsedData = JSON.parse(cleanJson);
-    } catch {
-      parsedData = {
-        diagnosisTitle: `Heuristic Analysis: ${symptom.slice(0, 30)}`,
-        rootCause: text.slice(0, 250),
-        engineeringSolution:
-          '1. Inspect ESP32 VDD 3.3V rail stability under oscilloscope.\n2. Ensure proper logic level conversion on external signal pins.',
-      };
+    if (text) {
+      try {
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        parsedData = JSON.parse(cleanJson);
+      } catch {
+        parsedData = {
+          diagnosisTitle: `Heuristic Analysis: ${symptom.slice(0, 30)}`,
+          rootCause: text.slice(0, 250),
+          engineeringSolution:
+            '1. Inspect ESP32 VDD 3.3V rail stability under oscilloscope.\n2. Ensure proper logic level conversion on external signal pins.',
+        };
+      }
     }
 
     return NextResponse.json({
