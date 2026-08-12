@@ -41,7 +41,8 @@ export function DiagnosticView({
   onGoBack,
   onReset
 }: DiagnosticViewProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [symptomInput, setSymptomInput] = useState("");
+  const [inputError, setInputError] = useState("");
   const [selectedModel, setSelectedModel] = useState<"nvidia-llama" | "nvidia-deepseek">("nvidia-llama");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStage, setLoadingStage] = useState(
@@ -56,15 +57,15 @@ export function DiagnosticView({
     if (!isQuestion) return [];
     const options = (currentNode as QuestionNode).options;
 
-    if (!searchQuery.trim()) return options;
+    if (!symptomInput.trim()) return options;
 
-    const query = searchQuery.toLowerCase();
+    const query = symptomInput.toLowerCase();
     return options.filter(
       (opt) =>
         opt.label.toLowerCase().includes(query) ||
         (opt.description && opt.description.toLowerCase().includes(query))
     );
-  }, [currentNode, isQuestion, searchQuery]);
+  }, [currentNode, isQuestion, symptomInput]);
 
   // Generate live telemetry mock values based on active category
   const telemetry = useMemo(() => {
@@ -85,6 +86,40 @@ export function DiagnosticView({
     }
   }, [currentNode]);
 
+  // Handle deterministic progression trigger
+  const handleOptionSelect = (optionId: string) => {
+    const option = (currentNode as QuestionNode).options.find(
+      (opt) => opt.id === optionId
+    );
+    if (option) {
+      onSelectOption(option.nextNodeId);
+      setSymptomInput("");
+      setInputError("");
+    }
+  };
+
+  // Parsing logic for keyword-matching algorithm
+  const handleCustomInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!symptomInput.trim()) return;
+
+    const userInputLower = symptomInput.toLowerCase();
+    const matchedOption = (currentNode as QuestionNode).options.find((option) => {
+      const keywords: string[] = (option as any).keywords || [];
+      return keywords.some((keyword) =>
+        userInputLower.includes(keyword.toLowerCase())
+      );
+    });
+
+    if (matchedOption) {
+      handleOptionSelect(matchedOption.id);
+    } else {
+      setInputError(
+        "No exact deterministic match found in the hardware knowledge base. Please select from the predefined options below."
+      );
+    }
+  };
+
   // Trigger Heuristic AI Analysis with selected model
   const handleRunHeuristicAnalysis = async () => {
     setIsAnalyzing(true);
@@ -104,7 +139,7 @@ export function DiagnosticView({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          symptom: searchQuery,
+          symptom: symptomInput,
           category: currentNode?.category,
           modelId: selectedModel
         })
@@ -118,7 +153,7 @@ export function DiagnosticView({
       let solutionText = data.engineeringSolution;
 
       // Intelligent Keyword Parser Fallback logic
-      const qLower = searchQuery.toLowerCase();
+      const qLower = symptomInput.toLowerCase();
       if (qLower.includes("heat") || qLower.includes("hot") || qLower.includes("burn")) {
         title = title || "Thermal Throttling & Power Rail Over-Voltage";
         cause = cause || `Excessive thermal dissipation detected on Vin/VDD. Input voltage exceeds LDO rating or short circuit is sinking excess current.`;
@@ -127,7 +162,7 @@ export function DiagnosticView({
         cause = cause || `Severe 2.4GHz ISM band co-channel interference or momentary VDD supply drop during peak transmission.`;
       } else if (!title) {
         title = "General Hardware Fault & Signal Anomaly";
-        cause = `Symptom '${searchQuery}' does not match standard deterministic trees. Unstable clocking, high-impedance floating pin, or power ripple suspected.`;
+        cause = `Symptom '${symptomInput}' does not match standard deterministic trees. Unstable clocking, high-impedance floating pin, or power ripple suspected.`;
       }
 
       const steps = typeof solutionText === "string" && solutionText.includes("\n")
@@ -144,7 +179,7 @@ export function DiagnosticView({
         category: currentNode?.category !== "root" ? (currentNode?.category as any) : "brownout",
         title: title,
         diagnosis: title,
-        symptomSummary: searchQuery,
+        symptomSummary: symptomInput,
         rootCause: cause,
         severity: "WARNING",
         engineeringSolution: {
@@ -165,9 +200,9 @@ export function DiagnosticView({
         id: `heuristic_fallback_${Date.now()}`,
         type: "diagnosis",
         category: "brownout",
-        title: `Heuristic Analysis: ${searchQuery.slice(0, 30)}`,
-        diagnosis: `Heuristic Diagnosis for ${searchQuery}`,
-        symptomSummary: searchQuery,
+        title: `Heuristic Analysis: ${symptomInput.slice(0, 30)}`,
+        diagnosis: `Heuristic Diagnosis for ${symptomInput}`,
+        symptomSummary: symptomInput,
         rootCause: "Unmapped hardware symptom. Voltage rail transient or logic level discrepancy suspected.",
         severity: "WARNING",
         engineeringSolution: {
@@ -186,7 +221,7 @@ export function DiagnosticView({
   if (!currentNode || !isQuestion) return null;
 
   const questionNode = currentNode as QuestionNode;
-  const isZeroMatch = searchQuery.trim().length > 3 && filteredOptions.length === 0;
+  const isZeroMatch = symptomInput.trim().length > 3 && filteredOptions.length === 0;
 
   return (
     <div className="h-full w-full flex flex-col lg:flex-row overflow-hidden bg-slate-950 animate-fadeIn">
@@ -248,7 +283,7 @@ export function DiagnosticView({
           </div>
 
           {/* FIRMLY PINNED HYBRID INPUT SEARCH FILTER SYSTEM */}
-          <div className="w-full space-y-1.5">
+          <form onSubmit={handleCustomInputSubmit} className="w-full space-y-1.5">
             <label className="block text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold">
               Describe your hardware symptom or search:
             </label>
@@ -256,21 +291,33 @@ export function DiagnosticView({
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={symptomInput}
+                onChange={(e) => {
+                  setSymptomInput(e.target.value);
+                  if (inputError) setInputError("");
+                }}
                 placeholder="Describe your hardware symptom or search keywords..."
                 className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 focus:border-[#06B6D4] text-white text-xs sm:text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/30 transition-all font-sans shadow-inner"
               />
-              {searchQuery && (
+              {symptomInput && (
                 <button
-                  onClick={() => setSearchQuery("")}
+                  type="button"
+                  onClick={() => {
+                    setSymptomInput("");
+                    setInputError("");
+                  }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white"
                 >
                   <FilterX className="w-4 h-4" />
                 </button>
               )}
             </div>
-          </div>
+            {inputError && (
+              <div className="text-red-400 text-xs font-mono mt-1 transition-all animate-fadeIn">
+                {inputError}
+              </div>
+            )}
+          </form>
         </div>
 
         {/* INDEPENDENTLY SCROLLABLE BENTO OPTIONS AREA (flex-1 overflow-y-auto) */}
@@ -305,7 +352,7 @@ export function DiagnosticView({
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed font-sans">
                   The rule engine does not have a hardcoded match for &quot;
-                  <span className="text-slate-200 font-semibold">{searchQuery}</span>
+                  <span className="text-slate-200 font-semibold">{symptomInput}</span>
                   &quot;. Select an LLM engine and launch Generative AI Heuristic Analysis.
                 </p>
               </div>
@@ -330,7 +377,7 @@ export function DiagnosticView({
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#06B6D4] hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm font-mono transition-all shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
               >
                 <Sparkles className="w-4 h-4 fill-current" />
-                Run Heuristic Analysis on &apos;{searchQuery}&apos;
+                Run Heuristic Analysis on &apos;{symptomInput}&apos;
               </button>
             </div>
           ) : filteredOptions.length > 0 ? (
@@ -340,8 +387,7 @@ export function DiagnosticView({
                 <button
                   key={option.id}
                   onClick={() => {
-                    onSelectOption(option.nextNodeId);
-                    setSearchQuery("");
+                    handleOptionSelect(option.id);
                   }}
                   className="group relative flex flex-col justify-between text-left p-6 rounded-xl bg-surface-card hover:bg-slate-900 border border-slate-800 hover:border-[#06B6D4] transition-all duration-200 shadow-md hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
                 >
@@ -367,7 +413,10 @@ export function DiagnosticView({
               <FilterX className="w-8 h-8 text-slate-500 mx-auto" />
               <p className="text-sm font-bold text-white">No matching options</p>
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSymptomInput("");
+                  setInputError("");
+                }}
                 className="mt-2 text-xs font-mono text-[#06B6D4] underline"
               >
                 Clear Search Filter

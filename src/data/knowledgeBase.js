@@ -36,31 +36,36 @@ export const knowledgeBase = {
           id: "opt_brownout",
           label: "Spontaneous Reboots / 'Brownout detector was triggered'",
           description: "Device reboots unexpectedly during boot, Wi-Fi initialization, or packet transmit.",
-          nextNodeId: "q_brownout_timing"
+          nextNodeId: "q_brownout_timing",
+          keywords: ["brownout", "reboot", "restart", "trigger", "spontaneous", "power", "reset"]
         },
         {
           id: "opt_espnow",
           label: "ESP-NOW Communication Failure / Delivery Error",
           description: "ESP-NOW packets fail to send, return ESP_ERR_ESPNOW_NOT_INIT, or peer fails to respond.",
-          nextNodeId: "q_espnow_error_type"
+          nextNodeId: "q_espnow_error_type",
+          keywords: ["espnow", "esp-now", "mac", "pairing", "peer", "delivery", "send", "packet", "fail"]
         },
         {
           id: "opt_wifi",
           label: "Wi-Fi Connection Timeout / Router Hangs",
           description: "ESP32 fails to connect to router, hangs in WiFi.begin loop, or triggers Task Watchdog Timer (WDT).",
-          nextNodeId: "q_wifi_symptom"
+          nextNodeId: "q_wifi_symptom",
+          keywords: ["wifi", "wi-fi", "connect", "timeout", "hang", "router", "ssid"]
         },
         {
           id: "opt_gpio",
           label: "GPIO Pin Failure / Sensor Reading Anomaly",
           description: "Digital inputs read incorrect values, GPIO hot to touch, or board unresponsive after interfacing 5V sensor/relay.",
-          nextNodeId: "q_gpio_voltage_level"
+          nextNodeId: "q_gpio_voltage_level",
+          keywords: ["gpio", "pin", "sensor", "voltage", "logic", "relay", "read", "digital"]
         },
         {
           id: "opt_antenna",
           label: "High Packet Loss / Low RSSI / Signal Degradation",
           description: "Poor RF range, frequent packet drop, RSSI below -85dBm, or range drops sharply indoors.",
-          nextNodeId: "q_antenna_type"
+          nextNodeId: "q_antenna_type",
+          keywords: ["antenna", "rssi", "packet", "loss", "signal", "degradation", "range", "rf"]
         }
       ]
     },
@@ -80,13 +85,15 @@ export const knowledgeBase = {
           id: "opt_bo_wifi_init",
           label: "Immediately when WiFi.begin() or esp_now_init() is called",
           description: "Reset coincides precisely with RF power amplifier turn-on.",
-          nextNodeId: "q_brownout_power_source"
+          nextNodeId: "q_brownout_power_source",
+          keywords: ["wifi", "begin", "esp_now", "init", "transmit", "rf", "power", "amplifier"]
         },
         {
           id: "opt_bo_continuous",
           label: "Continuous boot loop before main setup() completes",
           description: "Board resets repeatedly even before Wi-Fi code is executed.",
-          nextNodeId: "q_brownout_regulator_heat"
+          nextNodeId: "q_brownout_regulator_heat",
+          keywords: ["boot", "loop", "continuous", "setup", "reset", "before"]
         }
       ]
     },
@@ -103,13 +110,15 @@ export const knowledgeBase = {
           id: "opt_bo_usb_thin",
           label: "Powered via PC USB port or thin long USB cable with NO extra capacitors",
           description: "Standard USB cable without bulk storage near the 3.3V header.",
-          nextNodeId: "diag_brownout_transient_spike"
+          nextNodeId: "diag_brownout_transient_spike",
+          keywords: ["usb", "pc", "cable", "thin", "capacitor", "capacitors", "no"]
         },
         {
           id: "opt_bo_high_tx_power",
           label: "Powered via 5V Vin pin with max TX power setting (+20dBm)",
           description: "Linear LDO regulator (e.g. AMS1117-3.3) feeding ESP32 under maximum RF output.",
-          nextNodeId: "diag_brownout_ldo_saturation"
+          nextNodeId: "diag_brownout_ldo_saturation",
+          keywords: ["vin", "5v", "tx", "power", "maximum", "max", "ldo"]
         }
       ]
     },
@@ -126,13 +135,15 @@ export const knowledgeBase = {
           id: "opt_bo_hot_reg",
           label: "Regulator is extremely hot, Vin is connected to 9V or 12V supply",
           description: "Excessive thermal dropout causing thermal shutdown on AMS1117.",
-          nextNodeId: "diag_brownout_thermal_shutdown"
+          nextNodeId: "diag_brownout_thermal_shutdown",
+          keywords: ["hot", "regulator", "9v", "12v", "supply", "heat"]
         },
         {
           id: "opt_bo_under_voltage",
           label: "Regulator is cool, but VDD 3.3V rail measures below 3.0V under multimeter test",
           description: "Input supply cannot source required base current.",
-          nextNodeId: "diag_brownout_insufficient_source"
+          nextNodeId: "diag_brownout_insufficient_source",
+          keywords: ["cool", "vdd", "3.3v", "3.0v", "rail", "multimeter", "measure"]
         }
       ]
     },
@@ -232,19 +243,22 @@ export const knowledgeBase = {
           id: "opt_en_fail_callback",
           label: "esp_now_send() returns ESP_OK, but Send Callback status is ESP_NOW_SEND_FAIL",
           description: "Frame is transmitted over the air, but receiver fails to acknowledge (ACK) receipt.",
-          nextNodeId: "q_espnow_channel_sync"
+          nextNodeId: "q_espnow_channel_sync",
+          keywords: ["callback", "esp_now_send", "send", "fail", "ok", "acknowledge", "ack"]
         },
         {
           id: "opt_en_init_fail",
           label: "esp_now_init() returns ESP_ERR_ESPNOW_NOT_INIT or ESP_ERR_ESPNOW_ARG",
           description: "Initialization API fails immediately upon boot.",
-          nextNodeId: "q_espnow_wifi_mode"
+          nextNodeId: "q_espnow_wifi_mode",
+          keywords: ["esp_now_init", "init", "not_init", "arg", "fail", "error"]
         },
         {
           id: "opt_en_exist",
           label: "esp_now_add_peer() returns ESP_ERR_ESPNOW_EXIST or peer count exceeds limit",
           description: "Adding peer fails due to duplicate MAC or exceeding peer table capacity.",
-          nextNodeId: "diag_espnow_peer_table_overflow"
+          nextNodeId: "diag_espnow_peer_table_overflow",
+          keywords: ["add", "peer", "exist", "limit", "exceed", "overflow"]
         }
       ]
     },
@@ -261,13 +275,15 @@ export const knowledgeBase = {
           id: "opt_en_chan_diff",
           label: "Transmitter and receiver channels are not explicitly fixed, or one node is connected to Wi-Fi router",
           description: "Connecting to a Wi-Fi router forces channel to match router's dynamic channel.",
-          nextNodeId: "diag_espnow_channel_mismatch"
+          nextNodeId: "diag_espnow_channel_mismatch",
+          keywords: ["channel", "difference", "transmitter", "receiver", "router", "dynamic", "fix"]
         },
         {
           id: "opt_en_mac_diff",
           label: "Channels are identical, but target MAC address was obtained via WiFi.macAddress() while operating in AP mode",
           description: "Station MAC and SoftAP MAC on ESP32 differ by 1 byte in LSB.",
-          nextNodeId: "diag_espnow_mac_interface_mismatch"
+          nextNodeId: "diag_espnow_mac_interface_mismatch",
+          keywords: ["mac", "ap", "station", "sta", "macaddress", "interface"]
         }
       ]
     },
@@ -284,13 +300,15 @@ export const knowledgeBase = {
           id: "opt_en_no_wifi_mode",
           label: "esp_now_init() called without setting WiFi.mode() first",
           description: "Wi-Fi subsystem RF hardware is uninitialized.",
-          nextNodeId: "diag_espnow_uninitialized_stack"
+          nextNodeId: "diag_espnow_uninitialized_stack",
+          keywords: ["wifi.mode", "mode", "without", "setting", "first", "before"]
         },
         {
           id: "opt_en_encryption_mismatch",
           label: "Encryption key (LMK/PMK) mismatch or peer registered without setting encrypt=false",
           description: "Peer struct encryption parameters mismatched between nodes.",
-          nextNodeId: "diag_espnow_encryption_mismatch"
+          nextNodeId: "diag_espnow_encryption_mismatch",
+          keywords: ["encryption", "key", "lmk", "pmk", "mismatch", "encrypt"]
         }
       ]
     },
@@ -403,19 +421,22 @@ export const knowledgeBase = {
           id: "opt_wf_wdt_reset",
           label: "Serial monitor shows 'Task watchdog got triggered' or 'TG1WDT_SYS_RESET'",
           description: "Device reboots while executing while(WiFi.status() != WL_CONNECTED).",
-          nextNodeId: "diag_wifi_blocking_loop_wdt"
+          nextNodeId: "diag_wifi_blocking_loop_wdt",
+          keywords: ["watchdog", "wdt", "triggered", "reset", "tg1wdt_sys_reset", "serial", "monitor"]
         },
         {
           id: "opt_wf_dual_band",
           label: "Connection times out endlessly; router uses unified single SSID for 2.4GHz & 5GHz",
           description: "Dual-band mesh routers attempting band steering.",
-          nextNodeId: "diag_wifi_5ghz_band_steering"
+          nextNodeId: "diag_wifi_5ghz_band_steering",
+          keywords: ["ssid", "router", "single", "dual", "band", "steering", "mesh", "2.4ghz", "5ghz"]
         },
         {
           id: "opt_wf_dhcp_fail",
           label: "WiFi.status() remains WL_DISCONNECTED or WL_NO_SSID_AVAIL despite correct credentials",
           description: "DHCP server lease exhaustion or dynamic channel switching (DFS).",
-          nextNodeId: "q_wifi_security_type"
+          nextNodeId: "q_wifi_security_type",
+          keywords: ["wl_disconnected", "wl_no_ssid_avail", "credentials", "status", "disconnection"]
         }
       ]
     },
@@ -432,13 +453,15 @@ export const knowledgeBase = {
           id: "opt_wf_wpa3",
           label: "Router is set to WPA3-Only mode or Enterprise (802.1X)",
           description: "Legacy ESP32 base chip supports WPA2-Personal (AES/TKIP).",
-          nextNodeId: "diag_wifi_wpa3_incompatibility"
+          nextNodeId: "diag_wifi_wpa3_incompatibility",
+          keywords: ["wpa3", "enterprise", "802.1x", "security", "protocol"]
         },
         {
           id: "opt_wf_static_ip",
           label: "Standard WPA2-PSK router, but DHCP takes over 15 seconds to respond",
           description: "DHCP DISCOVER timeout or IP address pool exhaustion.",
-          nextNodeId: "diag_wifi_dhcp_timeout_static_ip"
+          nextNodeId: "diag_wifi_dhcp_timeout_static_ip",
+          keywords: ["wpa2", "wpa2-psk", "dhcp", "respond", "seconds", "15"]
         }
       ]
     },
@@ -533,19 +556,22 @@ export const knowledgeBase = {
           id: "opt_gpio_5v_direct",
           label: "5V signal directly connected from 5V sensor (e.g. HC-SR04, 5V Arduino, 5V Relay)",
           description: "Signal line exceeds VDD + 0.3V (3.6V max absolute limit).",
-          nextNodeId: "q_gpio_physical_symptom"
+          nextNodeId: "q_gpio_physical_symptom",
+          keywords: ["5v", "direct", "sensor", "hc-sr04", "arduino", "relay", "signal"]
         },
         {
           id: "opt_gpio_inductive_relay",
           label: "Relay coil connected directly to GPIO pin without transistor or flyback diode",
           description: "Driving inductive loads directly from micro-controller pin.",
-          nextNodeId: "diag_gpio_inductive_kickback"
+          nextNodeId: "diag_gpio_inductive_kickback",
+          keywords: ["relay", "coil", "transistor", "flyback", "diode", "inductive", "load"]
         },
         {
           id: "opt_gpio_floating",
           label: "Button switch or sensor output reads random fluctuating values (0 and 1)",
           description: "Input pin left in high-impedance floating state.",
-          nextNodeId: "diag_gpio_floating_input"
+          nextNodeId: "diag_gpio_floating_input",
+          keywords: ["floating", "button", "switch", "fluctuate", "random", "high-impedance"]
         }
       ]
     },
@@ -562,13 +588,15 @@ export const knowledgeBase = {
           id: "opt_gpio_hot_shorted",
           label: "ESP32 main chip is hot to touch, or pin measures shorted (0 ohms) to GND",
           description: "Internal ESD clamping diode latched up and melted internal silicon bond wire.",
-          nextNodeId: "diag_gpio_hardware_destruction"
+          nextNodeId: "diag_gpio_hardware_destruction",
+          keywords: ["hot", "shorted", "gnd", "0", "ohms", "measure", "touch"]
         },
         {
           id: "opt_gpio_no_read",
           label: "ESP32 works normally, but pin always reads 1 (HIGH) or fails digitalRead()",
           description: "Internal input buffer gate damaged due to 5V overvoltage exposure.",
-          nextNodeId: "diag_gpio_level_shifter_required"
+          nextNodeId: "diag_gpio_level_shifter_required",
+          keywords: ["normal", "1", "high", "digitalread", "fail", "read"]
         }
       ]
     },
@@ -666,13 +694,15 @@ export const knowledgeBase = {
           id: "opt_ant_ipex_whip",
           label: "External Whip/Omni Antenna connected via IPEX / u.FL connector",
           description: "ESP32-WROOM-32U or board with u.FL connector.",
-          nextNodeId: "q_antenna_resistor_selector"
+          nextNodeId: "q_antenna_resistor_selector",
+          keywords: ["external", "whip", "omni", "ipex", "u.fl", "connector"]
         },
         {
           id: "opt_ant_pcb_trace",
           label: "Onboard On-PCB Meandering Inverted-F (MIFA) Trace Antenna",
           description: "Standard ESP32-WROOM-32 module with printed antenna.",
-          nextNodeId: "q_antenna_enclosure_metal"
+          nextNodeId: "q_antenna_enclosure_metal",
+          keywords: ["onboard", "pcb", "trace", "mifa", "printed", "internal"]
         }
       ]
     },
@@ -689,13 +719,15 @@ export const knowledgeBase = {
           id: "opt_ant_jumper_wrong",
           label: "External antenna plugged in, but 0-ohm SMD resistor is still soldered toward the PCB trace antenna",
           description: "RF signal is disconnected from u.FL connector.",
-          nextNodeId: "diag_antenna_jumper_mismatch"
+          nextNodeId: "diag_antenna_jumper_mismatch",
+          keywords: ["jumper", "0-ohm", "resistor", "solder", "trace", "wrong"]
         },
         {
           id: "opt_ant_jumper_ok",
           label: "Resistor is placed correctly or board has u.FL only, but RSSI is still below -85dBm",
           description: "Co-channel interference or physical barrier issue.",
-          nextNodeId: "q_antenna_enclosure_metal"
+          nextNodeId: "q_antenna_enclosure_metal",
+          keywords: ["correct", "u.fl", "rssi", "below", "-85dbm", "interference", "barrier"]
         }
       ]
     },
@@ -712,13 +744,15 @@ export const knowledgeBase = {
           id: "opt_ant_metal_box",
           label: "Mounted inside a metal electrical junction box, metal chassis, or metal foil shield",
           description: "Faraday cage shielding RF signals.",
-          nextNodeId: "diag_antenna_faraday_attenuation"
+          nextNodeId: "diag_antenna_faraday_attenuation",
+          keywords: ["metal", "junction", "box", "chassis", "foil", "shield", "faraday"]
         },
         {
           id: "opt_ant_noise_24ghz",
           label: "Enclosure is plastic, but packet drops surge near microwave ovens, USB 3.0 hubs, or Bluetooth beacons",
           description: "Severe 2.4GHz ISM spectrum noise and co-channel interference.",
-          nextNodeId: "diag_antenna_24ghz_cochannel_noise"
+          nextNodeId: "diag_antenna_24ghz_cochannel_noise",
+          keywords: ["plastic", "microwave", "oven", "usb", "hub", "bluetooth", "beacon", "noise"]
         }
       ]
     },
