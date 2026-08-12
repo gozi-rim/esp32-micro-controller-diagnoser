@@ -23,18 +23,30 @@ export function ExpertSystem() {
     knowledgeBase.initialQuestionId
   );
   const [history, setHistory] = useState<string[]>([]);
+  const [customDiagnosisNode, setCustomDiagnosisNode] = useState<DiagnosisNode | null>(null);
 
   const currentNode: KnowledgeNode = knowledgeBase.nodes[currentNodeId];
 
   // Handle option click in wizard
   const handleSelectOption = (nextNodeId: string) => {
+    setCustomDiagnosisNode(null);
     setHistory((prev) => [...prev, currentNodeId]);
     setCurrentNodeId(nextNodeId);
     setActiveView("diagnostic");
   };
 
+  // Handle generative AI / heuristic custom diagnosis node injection
+  const handleCustomDiagnosis = (customNode: DiagnosisNode) => {
+    setCustomDiagnosisNode(customNode);
+    setActiveView("diagnostic");
+  };
+
   // Step back
   const handleGoBack = () => {
+    if (customDiagnosisNode) {
+      setCustomDiagnosisNode(null);
+      return;
+    }
     if (history.length > 0) {
       const previousNodeId = history[history.length - 1];
       setHistory((prev) => prev.slice(0, prev.length - 1));
@@ -45,6 +57,7 @@ export function ExpertSystem() {
   // Reset wizard
   const handleReset = () => {
     setHistory([]);
+    setCustomDiagnosisNode(null);
     setCurrentNodeId(knowledgeBase.initialQuestionId);
     setActiveView("dashboard");
   };
@@ -52,6 +65,7 @@ export function ExpertSystem() {
   // Start diagnostic from dashboard
   const handleStartDiagnostic = (categoryKey?: string) => {
     setHistory([]);
+    setCustomDiagnosisNode(null);
     if (categoryKey) {
       // Map category to starting question
       switch (categoryKey) {
@@ -92,7 +106,9 @@ export function ExpertSystem() {
           setActiveView(view);
           setMobileSidebarOpen(false);
         }}
-        isDiagnosticActive={currentNodeId !== knowledgeBase.initialQuestionId}
+        isDiagnosticActive={
+          currentNodeId !== knowledgeBase.initialQuestionId || !!customDiagnosisNode
+        }
       />
 
       {/* Main Workspace Column (Right Side - Full Height, Sticky Header, Scrollable Content) */}
@@ -103,7 +119,11 @@ export function ExpertSystem() {
           onResetDiagnostic={handleReset}
           historyLength={history.length}
           currentCategoryName={
-            currentNode?.category !== "root" ? currentNode?.category : undefined
+            customDiagnosisNode
+              ? customDiagnosisNode.category
+              : currentNode?.category !== "root"
+              ? currentNode?.category
+              : undefined
           }
           activeView={activeView}
         />
@@ -121,22 +141,33 @@ export function ExpertSystem() {
           {/* 2. Active Diagnostic View (Questions & Terminal Report) */}
           {activeView === "diagnostic" && (
             <>
-              {currentNode?.type === "question" && (
-                <DiagnosticView
-                  currentNodeId={currentNodeId}
-                  history={history}
-                  onSelectOption={handleSelectOption}
-                  onGoBack={handleGoBack}
-                  onReset={handleReset}
-                />
-              )}
-
-              {currentNode?.type === "diagnosis" && (
+              {customDiagnosisNode ? (
                 <DiagnosisReportView
-                  currentNode={currentNode as DiagnosisNode}
+                  currentNode={customDiagnosisNode}
                   history={history}
                   onReset={handleReset}
                 />
+              ) : (
+                <>
+                  {currentNode?.type === "question" && (
+                    <DiagnosticView
+                      currentNodeId={currentNodeId}
+                      history={history}
+                      onSelectOption={handleSelectOption}
+                      onCustomDiagnosis={handleCustomDiagnosis}
+                      onGoBack={handleGoBack}
+                      onReset={handleReset}
+                    />
+                  )}
+
+                  {currentNode?.type === "diagnosis" && (
+                    <DiagnosisReportView
+                      currentNode={currentNode as DiagnosisNode}
+                      history={history}
+                      onReset={handleReset}
+                    />
+                  )}
+                </>
               )}
             </>
           )}

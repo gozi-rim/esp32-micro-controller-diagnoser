@@ -4,7 +4,8 @@ import React, { useState, useMemo } from "react";
 import {
   knowledgeBase,
   KnowledgeNode,
-  QuestionNode
+  QuestionNode,
+  DiagnosisNode
 } from "@/data/knowledgeBase";
 import { ESP32Diagram } from "./ESP32Diagram";
 import {
@@ -17,13 +18,17 @@ import {
   Radio,
   Wifi,
   Cpu,
-  FilterX
+  FilterX,
+  Sparkles,
+  Bot,
+  Loader2
 } from "lucide-react";
 
 interface DiagnosticViewProps {
   currentNodeId: string;
   history: string[];
   onSelectOption: (nextNodeId: string) => void;
+  onCustomDiagnosis: (customNode: DiagnosisNode) => void;
   onGoBack: () => void;
   onReset: () => void;
 }
@@ -32,10 +37,15 @@ export function DiagnosticView({
   currentNodeId,
   history,
   onSelectOption,
+  onCustomDiagnosis,
   onGoBack,
   onReset
 }: DiagnosticViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [loadingStage, setLoadingStage] = useState(
+    "Extracting hardware parameters..."
+  );
 
   const currentNode: KnowledgeNode = knowledgeBase.nodes[currentNodeId];
   const isQuestion = currentNode?.type === "question";
@@ -74,9 +84,103 @@ export function DiagnosticView({
     }
   }, [currentNode]);
 
+  // Trigger Heuristic AI Analysis
+  const handleRunHeuristicAnalysis = async () => {
+    setIsAnalyzing(true);
+    setLoadingStage("Extracting hardware parameters...");
+
+    const stageTimer = setTimeout(() => {
+      setLoadingStage("Cross-referencing domain vectors via LLM...");
+    }, 800);
+
+    try {
+      // Call backend /api/diagnose route
+      const res = await fetch("/api/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symptom: searchQuery,
+          category: currentNode?.category
+        })
+      });
+
+      const data = await res.json();
+      clearTimeout(stageTimer);
+
+      let title = data.diagnosisTitle;
+      let cause = data.rootCause;
+      let solutionText = data.engineeringSolution;
+
+      // Intelligent Keyword Parser Fallback logic
+      const qLower = searchQuery.toLowerCase();
+      if (qLower.includes("heat") || qLower.includes("hot") || qLower.includes("burn")) {
+        title = title || "Thermal Throttling & Power Rail Over-Voltage";
+        cause = cause || `Excessive thermal dissipation detected on Vin/VDD. Input voltage exceeds LDO rating or short circuit is sinking excess current.`;
+      } else if (qLower.includes("drop") || qLower.includes("disconnect") || qLower.includes("fail")) {
+        title = title || "RF Spectrum Noise / Transient Power Instability";
+        cause = cause || `Severe 2.4GHz ISM band co-channel interference or momentary VDD supply drop during peak transmission.`;
+      } else if (!title) {
+        title = "General Hardware Fault & Signal Anomaly";
+        cause = `Symptom '${searchQuery}' does not match standard deterministic trees. Unstable clocking, high-impedance floating pin, or power ripple suspected.`;
+      }
+
+      const steps = typeof solutionText === "string" && solutionText.includes("\n")
+        ? solutionText.split("\n").filter((s) => s.trim().length > 0)
+        : [
+            typeof solutionText === "string" ? solutionText : "Verify 3.3V power supply rail stability under load using an oscilloscope.",
+            "Inspect all 5V signal inputs for necessary logic level shifters.",
+            "Monitor serial output at 115200 baud for bootloader crash codes."
+          ];
+
+      const customDiagnosisNode: DiagnosisNode = {
+        id: `heuristic_${Date.now()}`,
+        type: "diagnosis",
+        category: currentNode?.category !== "root" ? (currentNode?.category as any) : "brownout",
+        title: title,
+        diagnosis: title,
+        symptomSummary: searchQuery,
+        rootCause: cause,
+        severity: "WARNING",
+        engineeringSolution: {
+          summary: typeof solutionText === "string" ? solutionText.slice(0, 150) + "..." : "Heuristic remediation generated.",
+          steps: steps,
+          circuitDiagramNote: "Submit symptom to Database for Review if issue persists across hardware revisions.",
+          codeSnippet: "// Heuristic Analysis Firmware Fix\n// Ensure non-blocking delay and power stability\n#include <esp_wifi.h>\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  esp_wifi_set_max_tx_power(52); // Reduce peak current spikes\n}"
+        }
+      };
+
+      setIsAnalyzing(false);
+      onCustomDiagnosis(customDiagnosisNode);
+    } catch (err) {
+      console.error("Heuristic analysis failed:", err);
+      setIsAnalyzing(false);
+      // Fallback custom node
+      const fallbackNode: DiagnosisNode = {
+        id: `heuristic_fallback_${Date.now()}`,
+        type: "diagnosis",
+        category: "brownout",
+        title: `Heuristic Analysis: ${searchQuery.slice(0, 30)}`,
+        diagnosis: `Heuristic Diagnosis for ${searchQuery}`,
+        symptomSummary: searchQuery,
+        rootCause: "Unmapped hardware symptom. Voltage rail transient or logic level discrepancy suspected.",
+        severity: "WARNING",
+        engineeringSolution: {
+          summary: "Check power rails, decoupling capacitors, and serial monitor dumps.",
+          steps: [
+            "Measure VDD 3.3V rail voltage under load.",
+            "Verify logic level conversion on external signal pins.",
+            "Submit symptom to database for review."
+          ]
+        }
+      };
+      onCustomDiagnosis(fallbackNode);
+    }
+  };
+
   if (!currentNode || !isQuestion) return null;
 
   const questionNode = currentNode as QuestionNode;
+  const isZeroMatch = searchQuery.trim().length > 3 && filteredOptions.length === 0;
 
   return (
     <div className="h-full w-full flex flex-col lg:flex-row overflow-hidden bg-slate-950 animate-fadeIn">
@@ -165,7 +269,51 @@ export function DiagnosticView({
 
         {/* INDEPENDENTLY SCROLLABLE BENTO OPTIONS AREA (flex-1 overflow-y-auto) */}
         <div className="flex-1 w-full overflow-y-auto pt-4 pr-1 space-y-3">
-          {filteredOptions.length > 0 ? (
+          {/* Multi-Stage Loading Indicator for Heuristic Analysis */}
+          {isAnalyzing ? (
+            <div className="w-full p-8 rounded-2xl bg-slate-900/90 border border-cyan-800/80 text-center space-y-4 shadow-2xl animate-pulse">
+              <div className="p-3 rounded-full bg-cyan-950 text-[#06B6D4] w-12 h-12 mx-auto flex items-center justify-center border border-cyan-800">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white font-mono">
+                  Generative Heuristic Engine Active
+                </h3>
+                <p className="text-xs font-mono text-[#06B6D4] mt-1">
+                  {loadingStage}
+                </p>
+              </div>
+            </div>
+          ) : isZeroMatch ? (
+            /* EMPTY STATE & CUSTOM HEURISTIC ANALYSIS CTA CARD */
+            <div className="w-full p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-cyan-950 hover:border-cyan-800/80 transition-all text-center space-y-4 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#06B6D4]/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="p-3 rounded-2xl bg-cyan-950/80 text-[#06B6D4] w-12 h-12 mx-auto flex items-center justify-center border border-cyan-800/60 shadow-lg">
+                <Bot className="w-6 h-6" />
+              </div>
+
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-white">
+                  No exact rule match found in the Knowledge Base
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                  The rule engine does not have a hardcoded match for &quot;
+                  <span className="text-slate-200 font-semibold">{searchQuery}</span>
+                  &quot;. Launch Generative AI Heuristic Analysis to synthesize hardware domain vectors.
+                </p>
+              </div>
+
+              <button
+                onClick={handleRunHeuristicAnalysis}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#06B6D4] hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm font-mono transition-all shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+              >
+                <Sparkles className="w-4 h-4 fill-current" />
+                Run Heuristic Analysis on &apos;{searchQuery}&apos;
+              </button>
+            </div>
+          ) : filteredOptions.length > 0 ? (
+            /* Bento Options List */
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
               {filteredOptions.map((option) => (
                 <button
@@ -196,10 +344,7 @@ export function DiagnosticView({
           ) : (
             <div className="w-full p-8 rounded-xl bg-surface-card border border-slate-800 text-center space-y-2">
               <FilterX className="w-8 h-8 text-slate-500 mx-auto" />
-              <p className="text-sm font-bold text-white">No matching option tiles found</p>
-              <p className="text-xs text-slate-400">
-                Try searching for keywords like "voltage", "MAC", "watchdog", "5V", or "antenna".
-              </p>
+              <p className="text-sm font-bold text-white">No matching options</p>
               <button
                 onClick={() => setSearchQuery("")}
                 className="mt-2 text-xs font-mono text-[#06B6D4] underline"
