@@ -9,7 +9,8 @@ import {
   Sparkles,
   Loader2,
   Cpu,
-  Trash2
+  Trash2,
+  AlertOctagon
 } from "lucide-react";
 
 interface DiagnosticChatbotProps {
@@ -21,8 +22,8 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
   const [selectedModel, setSelectedModel] = useState<"nvidia-llama" | "nvidia-deepseek">("nvidia-llama");
   const [input, setInput] = useState("");
 
-  // Vercel AI SDK (@ai-sdk/react) useChat Hook
-  const { messages, status, sendMessage, setMessages } = useChat();
+  // Vercel AI SDK (@ai-sdk/react) useChat Hook with Error Extraction
+  const { messages, status, sendMessage, setMessages, error } = useChat();
 
   const isLoading = status === "submitted" || status === "streaming";
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -30,7 +31,7 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
   // Auto-scroll to bottom of chat history on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, error]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,18 +87,18 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
                   AI Co-Pilot
                 </h3>
 
-                {/* Sleek Model Selector Dropdown */}
+                {/* OpenRouter Model Selector Dropdown */}
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value as any)}
                   className="bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-cyan-400 outline-none cursor-pointer"
                 >
-                  <option value="nvidia-llama">Llama 3.1 70B (NVIDIA)</option>
-                  <option value="nvidia-deepseek">DeepSeek-R1 (NVIDIA)</option>
+                  <option value="nvidia-llama">Llama 3.3 70B (OpenRouter)</option>
+                  <option value="nvidia-deepseek">DeepSeek-R1 (OpenRouter)</option>
                 </select>
               </div>
               <p className="text-[10px] font-mono text-slate-400 mt-0.5">
-                Vercel AI SDK Engine
+                OpenRouter Free Gateway
               </p>
             </div>
           </div>
@@ -149,7 +150,7 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
                     <span>
                       {selectedModel === "nvidia-deepseek"
                         ? "DeepSeek-R1 AI"
-                        : "Llama 3.1 70B AI"}
+                        : "Llama 3.3 70B AI"}
                     </span>
                   </>
                 ) : (
@@ -193,6 +194,16 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
             </div>
           )}
 
+          {/* Dedicated System Error UI Block */}
+          {error && (
+            <div className="text-red-400 p-3 bg-red-950/50 mt-2 font-mono text-xs border border-red-700 rounded-xl flex items-start gap-2 shadow-lg">
+              <AlertOctagon className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">API CRASH:</span> {error?.message || "Communication failure with LLM gateway."}
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -229,7 +240,7 @@ export function DiagnosticChatbot({ isOpen, onClose }: DiagnosticChatbotProps) {
               <Cpu className="w-3 h-3 text-[#06B6D4]" /> ECE 515.2 Heuristic Agent
             </span>
             <span>
-              {selectedModel === "nvidia-deepseek" ? "DeepSeek-R1" : "Llama-3.1-70B"}
+              {selectedModel === "nvidia-deepseek" ? "DeepSeek-R1" : "Llama-3.3-70B"}
             </span>
           </div>
         </form>
