@@ -1,19 +1,22 @@
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText, wrapLanguageModel, extractReasoningMiddleware } from 'ai';
 
-const nvidia = createOpenAI({
-  baseURL: 'https://integrate.api.nvidia.com/v1',
-  apiKey: process.env.NVIDIA_API_KEY,
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 export async function POST(req: Request) {
   try {
     const { messages, modelId } = await req.json();
-    const modelName = modelId === 'nvidia-deepseek' ? 'deepseek-ai/deepseek-r1' : 'meta/llama-3.1-70b-instruct';
-    
+
+    // Route to free models via OpenRouter
+    const targetModel = modelId === 'nvidia-deepseek' 
+      ? 'deepseek/deepseek-r1:free' 
+      : 'meta-llama/llama-3.3-70b-instruct:free';
+
     const enhancedModel = wrapLanguageModel({
-      model: nvidia(modelName),
-      middleware: extractReasoningMiddleware({ tagName: 'think' })
+      model: openrouter(targetModel),
+      middleware: extractReasoningMiddleware({ tagName: 'think' }),
     });
 
     const result = streamText({
@@ -25,6 +28,6 @@ export async function POST(req: Request) {
     return result.toTextStreamResponse();
   } catch (error) {
     console.error('[API CRASH]:', error);
-    return new Response(JSON.stringify({ error: 'Failed to generate response' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'System crash' }), { status: 500 });
   }
 }
