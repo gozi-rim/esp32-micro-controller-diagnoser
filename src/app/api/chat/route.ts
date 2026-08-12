@@ -16,9 +16,10 @@ export async function POST(req: Request) {
     console.log('--- [API HIT] NEW REQUEST ---');
     console.log('Model ID:', body.modelId);
     
+    // Route to available models via OpenRouter
     const targetModel = body.modelId === 'nvidia-deepseek' 
       ? 'deepseek/deepseek-r1:free' 
-      : 'meta-llama/llama-3.3-70b-instruct:free';
+      : 'meta-llama/llama-3.3-70b-instruct';
 
     console.log('Routing to OpenRouter Model:', targetModel);
 
