@@ -10,6 +10,7 @@ import { DiagnosisReportView } from "./DiagnosisReportView";
 import { HardwareLogsView } from "./HardwareLogsView";
 import { KnowledgeBaseView } from "./KnowledgeBaseView";
 import { AboutView } from "./AboutView";
+import { DiagnosticChatbot } from "./DiagnosticChatbot";
 
 export function ExpertSystem() {
   const [activeView, setActiveView] = useState<
@@ -18,6 +19,7 @@ export function ExpertSystem() {
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   const [currentNodeId, setCurrentNodeId] = useState<string>(
     knowledgeBase.initialQuestionId
@@ -112,7 +114,7 @@ export function ExpertSystem() {
       />
 
       {/* Main Workspace Column (Right Side - Full Height, Sticky Header, Scrollable Content) */}
-      <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden relative">
         {/* Sticky Header inside Main Column */}
         <Header
           onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
@@ -126,6 +128,7 @@ export function ExpertSystem() {
               : undefined
           }
           activeView={activeView}
+          onToggleChatbot={() => setIsChatbotOpen(!isChatbotOpen)}
         />
 
         {/* Scrollable Main Workspace Area (Zero Dead Side Whitespace) */}
@@ -182,6 +185,12 @@ export function ExpertSystem() {
           {activeView === "about" && <AboutView />}
         </main>
       </div>
+
+      {/* Interactive AI Co-Pilot Slide-out Drawer */}
+      <DiagnosticChatbot
+        isOpen={isChatbotOpen}
+        onClose={() => setIsChatbotOpen(false)}
+      />
     </div>
   );
 }
