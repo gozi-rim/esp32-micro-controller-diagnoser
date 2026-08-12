@@ -24,8 +24,16 @@ export function ExpertSystem() {
   );
   const [history, setHistory] = useState<string[]>([]);
   const [customDiagnosisNode, setCustomDiagnosisNode] = useState<DiagnosisNode | null>(null);
+  const [customLogs, setCustomLogs] = useState<string[]>([]);
 
   const currentNode: KnowledgeNode = knowledgeBase.nodes[currentNodeId];
+
+  // Append user-entered custom symptom to customLogs state
+  const handleAddCustomLog = (logText: string) => {
+    if (logText.trim()) {
+      setCustomLogs((prev) => [...prev, logText.trim()]);
+    }
+  };
 
   // Handle option click in wizard
   const handleSelectOption = (nextNodeId: string) => {
@@ -58,6 +66,7 @@ export function ExpertSystem() {
   const handleReset = () => {
     setHistory([]);
     setCustomDiagnosisNode(null);
+    setCustomLogs([]);
     setCurrentNodeId(knowledgeBase.initialQuestionId);
     setActiveView("dashboard");
   };
@@ -66,6 +75,7 @@ export function ExpertSystem() {
   const handleStartDiagnostic = (categoryKey?: string) => {
     setHistory([]);
     setCustomDiagnosisNode(null);
+    setCustomLogs([]);
     if (categoryKey) {
       // Map category to starting question
       switch (categoryKey) {
@@ -145,6 +155,7 @@ export function ExpertSystem() {
                 <DiagnosisReportView
                   currentNode={customDiagnosisNode}
                   history={history}
+                  customLogs={customLogs}
                   onReset={handleReset}
                 />
               ) : (
@@ -153,6 +164,8 @@ export function ExpertSystem() {
                     <DiagnosticView
                       currentNodeId={currentNodeId}
                       history={history}
+                      customLogs={customLogs}
+                      onAddCustomLog={handleAddCustomLog}
                       onSelectOption={handleSelectOption}
                       onCustomDiagnosis={handleCustomDiagnosis}
                       onGoBack={handleGoBack}
@@ -164,6 +177,7 @@ export function ExpertSystem() {
                     <DiagnosisReportView
                       currentNode={currentNode as DiagnosisNode}
                       history={history}
+                      customLogs={customLogs}
                       onReset={handleReset}
                     />
                   )}

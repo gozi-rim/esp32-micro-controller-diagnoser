@@ -20,6 +20,7 @@ import {
 interface DiagnosisReportViewProps {
   currentNode: DiagnosisNode;
   history: string[];
+  customLogs?: string[];
   onReset: () => void;
   onLogSession?: (diagnosis: DiagnosisNode) => void;
 }
@@ -27,6 +28,7 @@ interface DiagnosisReportViewProps {
 export function DiagnosisReportView({
   currentNode,
   history,
+  customLogs = [],
   onReset,
   onLogSession
 }: DiagnosisReportViewProps) {
@@ -49,6 +51,7 @@ export function DiagnosisReportView({
       symptomSummary: currentNode.symptomSummary,
       rootCause: currentNode.rootCause,
       engineeringSolution: currentNode.engineeringSolution,
+      recordedTechnicianCustomLogs: customLogs,
       decisionPathHistory: history
     };
 
@@ -135,6 +138,29 @@ export function DiagnosisReportView({
                 {currentNode.symptomSummary}
               </div>
             </div>
+
+            {/* Technician Custom Inputs Log Display */}
+            {customLogs && customLogs.length > 0 && (
+              <div className="p-5 rounded-xl bg-slate-900/90 border border-cyan-800/80 space-y-3">
+                <h4 className="text-xs font-bold font-mono text-neon-cyan uppercase tracking-wider flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-neon-cyan" />
+                  Recorded Technician Manual Inputs ({customLogs.length})
+                </h4>
+                <div className="space-y-2">
+                  {customLogs.map((log, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 flex items-start gap-2.5"
+                    >
+                      <span className="px-2 py-0.5 rounded bg-cyan-950 text-neon-cyan text-[10px] font-bold border border-cyan-800 shrink-0">
+                        Input #{idx + 1}
+                      </span>
+                      <span className="leading-relaxed font-sans">{log}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Root Cause Breakdown */}
             <div className="p-5 rounded-xl bg-slate-900/90 border border-card-border space-y-2">

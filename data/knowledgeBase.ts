@@ -20,7 +20,7 @@ export interface EngineeringSolution {
 export interface QuestionNode {
   id: string;
   type: "question";
-  category: "root" | "brownout" | "espnow" | "wifi" | "gpio" | "antenna";
+  category: "root" | "brownout" | "espnow" | "wifi" | "gpio" | "antenna" | "custom";
   title: string;
   question: string;
   description?: string;
@@ -30,7 +30,7 @@ export interface QuestionNode {
 export interface DiagnosisNode {
   id: string;
   type: "diagnosis";
-  category: "brownout" | "espnow" | "wifi" | "gpio" | "antenna";
+  category: "brownout" | "espnow" | "wifi" | "gpio" | "antenna" | "custom";
   title: string;
   symptomSummary: string;
   diagnosis: string;

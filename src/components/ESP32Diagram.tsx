@@ -3,7 +3,7 @@
 import React from "react";
 
 interface ESP32DiagramProps {
-  category: "root" | "brownout" | "espnow" | "wifi" | "gpio" | "antenna";
+  category: "root" | "brownout" | "espnow" | "wifi" | "gpio" | "antenna" | "custom";
   activeSubsystemTitle?: string;
 }
 

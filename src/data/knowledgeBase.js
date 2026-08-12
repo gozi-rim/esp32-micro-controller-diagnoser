@@ -813,6 +813,82 @@ export const knowledgeBase = {
         ],
         codeSnippet: "// Enable ESP32 Wi-Fi Long Range Mode for enhanced noise immunity:\n#include <esp_wifi.h>\n\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  // Enable LR mode on STA interface\n  esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N | WIFI_PROTOCOL_LR);\n}"
       }
+    },
+
+    // ==========================================
+    // FAULT TREE 6: UNIVERSAL CUSTOM FALLBACK BRANCH
+    // ==========================================
+    "custom_step_2": {
+      id: "custom_step_2",
+      type: "question",
+      category: "custom",
+      title: "Custom Issue Persistence & Repeatability",
+      question: "Is this custom issue occurring consistently on every boot, or is it intermittent?",
+      description: "Determine whether the symptom is tied to deterministic boot code initialization or transient environmental factors.",
+      options: [
+        {
+          id: "opt_custom_consistent",
+          label: "Consistently on every boot",
+          description: "Issue recurs predictably every time power is applied or micro-controller resets.",
+          nextNodeId: "custom_step_3",
+          keywords: ["consistent", "consistently", "boot", "every", "always", "predictable"]
+        },
+        {
+          id: "opt_custom_intermittent",
+          label: "Intermittently / randomly",
+          description: "Issue occurs sporadically after variable runtime or environmental changes.",
+          nextNodeId: "custom_step_3",
+          keywords: ["intermittent", "intermittently", "random", "randomly", "sporadic", "sometimes"]
+        }
+      ]
+    },
+
+    "custom_step_3": {
+      id: "custom_step_3",
+      type: "question",
+      category: "custom",
+      title: "Hardware Peripheral Isolation Test",
+      question: "Have you isolated the ESP32 from all external peripherals and sensors to verify the core board isn't damaged?",
+      description: "Disconnecting all external sensors, displays, and relays helps distinguish internal microcontroller damage from external load faults.",
+      options: [
+        {
+          id: "opt_custom_isolated_yes",
+          label: "Yes, isolated core module tested in isolation",
+          description: "All external GPIO connections, sensors, and actuators were removed.",
+          nextNodeId: "custom_diag_final",
+          keywords: ["isolated", "yes", "bare", "standalone", "disconnected"]
+        },
+        {
+          id: "opt_custom_isolated_no",
+          label: "No, peripherals and wiring are still attached",
+          description: "External circuits remain connected to ESP32 GPIO pins.",
+          nextNodeId: "custom_diag_final",
+          keywords: ["no", "attached", "connected", "peripherals", "wiring"]
+        }
+      ]
+    },
+
+    "custom_diag_final": {
+      id: "custom_diag_final",
+      type: "diagnosis",
+      category: "custom",
+      title: "Custom Symptom Diagnostics & Hardware Isolation Analysis",
+      severity: "WARNING",
+      symptomSummary: "Custom user-reported hardware symptom captured during diagnostic traversal.",
+      diagnosis: "User-Defined Custom Symptom & Peripheral Isolation Assessment",
+      rootCause: "The reported issue does not match standard pre-programmed decision tree paths. Analysis of recorded technician logs indicates potential peripheral loading, signal bus contention, or unmapped firmware state.",
+      engineeringSolution: {
+        summary: "Perform methodical hardware isolation, review recorded technician logs, and run bare core isolation sketch.",
+        steps: [
+          "Disconnect all external sensors, displays, and relay modules from ESP32 GPIO pins.",
+          "Reflash a minimal 'Blink' or basic serial output sketch to test core MCU sanity.",
+          "Measure VDD 3.3V power rail using an oscilloscope under load to verify voltage stability.",
+          "Review recorded custom technician logs with Senior Systems Engineer."
+        ],
+        circuitDiagramNote: "Verify 3.3V power decoupling (100uF electrolytic + 0.1uF ceramic) near VDD header pins.",
+        codeSnippet: "// Core Isolation Test Firmware\n#include <Arduino.h>\nvoid setup() {\n  Serial.begin(115200);\n  Serial.println(\"--- ESP32 Core Isolation Sanity Test ---\");\n}\nvoid loop() {\n  Serial.printf(\"Free Heap: %d bytes | Uptime: %lu ms\\n\", ESP.getFreeHeap(), millis());\n  delay(1000);\n}"
+      }
     }
   }
 };
+

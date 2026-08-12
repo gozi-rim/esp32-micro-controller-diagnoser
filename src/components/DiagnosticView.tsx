@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   knowledgeBase,
   KnowledgeNode,
@@ -21,12 +21,16 @@ import {
   FilterX,
   Sparkles,
   Bot,
-  Loader2
+  Loader2,
+  PlusCircle,
+  Edit3
 } from "lucide-react";
 
 interface DiagnosticViewProps {
   currentNodeId: string;
   history: string[];
+  customLogs?: string[];
+  onAddCustomLog?: (logText: string) => void;
   onSelectOption: (nextNodeId: string) => void;
   onCustomDiagnosis: (customNode: DiagnosisNode) => void;
   onGoBack: () => void;
@@ -36,6 +40,8 @@ interface DiagnosticViewProps {
 export function DiagnosticView({
   currentNodeId,
   history,
+  customLogs = [],
+  onAddCustomLog,
   onSelectOption,
   onCustomDiagnosis,
   onGoBack,
@@ -43,6 +49,8 @@ export function DiagnosticView({
 }: DiagnosticViewProps) {
   const [symptomInput, setSymptomInput] = useState("");
   const [inputError, setInputError] = useState("");
+  const [isCustomCardActive, setIsCustomCardActive] = useState(false);
+  const [cardInputText, setCardInputText] = useState("");
   const [selectedModel, setSelectedModel] = useState<"nvidia-llama" | "nvidia-deepseek">("nvidia-llama");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStage, setLoadingStage] = useState(
@@ -85,6 +93,84 @@ export function DiagnosticView({
         return { vdd: "3.30 V", rssi: "-65 dBm", ch: "Ch 1", heap: "245 KB", loss: "0%" };
     }
   }, [currentNode]);
+
+  useEffect(() => {
+    setIsCustomCardActive(false);
+    setCardInputText("");
+  }, [currentNodeId]);
+
+  // Handle custom card input submit (routing through fallback tree or triggering heuristic AI)
+  const handleCustomCardSubmit = async () => {
+    if (!cardInputText.trim()) return;
+
+    const trimmed = cardInputText.trim();
+    if (onAddCustomLog) {
+      onAddCustomLog(trimmed);
+    }
+
+    setIsCustomCardActive(false);
+    setCardInputText("");
+
+    // Determine target fallback route step
+    let nextStep = "custom_step_2";
+    if (currentNodeId === "custom_step_2") {
+      nextStep = "custom_step_3";
+    } else if (currentNodeId === "custom_step_3") {
+      nextStep = "custom_diag_final";
+    }
+
+    if (nextStep === "custom_diag_final") {
+      // Trigger issue-specific AI heuristic analysis for final custom diagnosis
+      const combinedSymptoms = [...(customLogs || []), trimmed].join(" | ");
+      setIsAnalyzing(true);
+      setLoadingStage("Cross-referencing custom hardware symptoms with heuristic engine...");
+
+      try {
+        const res = await fetch("/api/diagnose", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            symptom: combinedSymptoms,
+            category: "custom",
+            modelId: selectedModel
+          })
+        });
+
+        const data = await res.json();
+        setIsAnalyzing(false);
+
+        const customDiagnosisNode: DiagnosisNode = {
+          id: `custom_diag_${Date.now()}`,
+          type: "diagnosis",
+          category: "custom",
+          title: data.diagnosisTitle || `Custom Diagnosis: ${trimmed.slice(0, 30)}`,
+          diagnosis: data.diagnosisTitle || `Custom Diagnosis: ${trimmed}`,
+          symptomSummary: combinedSymptoms,
+          rootCause: data.rootCause || "Custom unmapped hardware fault detected across microcontroller interface pins.",
+          severity: "WARNING",
+          engineeringSolution: {
+            summary: typeof data.engineeringSolution === "string" ? data.engineeringSolution.slice(0, 150) + "..." : "Perform custom hardware isolation.",
+            steps: typeof data.engineeringSolution === "string" && data.engineeringSolution.includes("\n")
+              ? data.engineeringSolution.split("\n").filter((s: string) => s.trim().length > 0)
+              : [
+                  "Disconnect all external sensors, displays, and relays from ESP32 GPIO pins.",
+                  "Reflash a minimal 'Blink' or basic serial output sketch to test core MCU sanity.",
+                  "Measure VDD 3.3V rail voltage under load."
+                ],
+            circuitDiagramNote: "Verify decoupling capacitance (100uF + 0.1uF) near VDD pins.",
+            codeSnippet: "// Core Isolation Test Firmware\nvoid setup() {\n  Serial.begin(115200);\n  Serial.println(\"--- Custom Fault Sanity Test ---\");\n}\nvoid loop() {\n  Serial.printf(\"Free Heap: %d bytes\\n\", ESP.getFreeHeap());\n  delay(1000);\n}"
+          }
+        };
+
+        onCustomDiagnosis(customDiagnosisNode);
+      } catch (err) {
+        setIsAnalyzing(false);
+        onSelectOption("custom_diag_final");
+      }
+    } else {
+      onSelectOption(nextStep);
+    }
+  };
 
   // Handle deterministic progression trigger
   const handleOptionSelect = (optionId: string) => {
@@ -380,7 +466,7 @@ export function DiagnosticView({
                 Run Heuristic Analysis on &apos;{symptomInput}&apos;
               </button>
             </div>
-          ) : filteredOptions.length > 0 ? (
+          ) : (
             /* Bento Options List */
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
               {filteredOptions.map((option) => (
@@ -407,20 +493,65 @@ export function DiagnosticView({
                   )}
                 </button>
               ))}
-            </div>
-          ) : (
-            <div className="w-full p-8 rounded-xl bg-surface-card border border-slate-800 text-center space-y-2">
-              <FilterX className="w-8 h-8 text-slate-500 mx-auto" />
-              <p className="text-sm font-bold text-white">No matching options</p>
-              <button
-                onClick={() => {
-                  setSymptomInput("");
-                  setInputError("");
-                }}
-                className="mt-2 text-xs font-mono text-[#06B6D4] underline"
-              >
-                Clear Search Filter
-              </button>
+
+              {/* Morphing "Other / Custom Issue" Card */}
+              {!isCustomCardActive ? (
+                <button
+                  type="button"
+                  onClick={() => setIsCustomCardActive(true)}
+                  className="group relative flex flex-col justify-between text-left p-6 rounded-xl bg-slate-900/90 hover:bg-slate-900 border border-dashed border-cyan-800/80 hover:border-cyan-400 transition-all duration-200 shadow-md hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] focus:outline-none cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <span className="text-sm sm:text-base font-bold text-neon-cyan leading-snug flex items-center gap-2">
+                      <PlusCircle className="w-4 h-4 text-neon-cyan" />
+                      Other / Custom Issue
+                    </span>
+                    <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-800 text-neon-cyan transition-all shrink-0">
+                      <Edit3 className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed pt-1">
+                    Describe your unlisted hardware symptom to trigger the fallback isolation flow &amp; custom AI diagnosis.
+                  </p>
+                </button>
+              ) : (
+                <div className="sm:col-span-2 p-6 rounded-xl bg-slate-900 border-2 border-cyan-500 shadow-2xl space-y-4 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono text-neon-cyan font-bold uppercase tracking-wider flex items-center gap-2">
+                      <Edit3 className="w-4 h-4" />
+                      Describe Custom Symptom:
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomCardActive(false);
+                        setCardInputText("");
+                      }}
+                      className="text-xs font-mono text-slate-400 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={cardInputText}
+                    onChange={(e) => setCardInputText(e.target.value)}
+                    placeholder="Enter details about the unlisted hardware fault or symptom..."
+                    className="w-full p-3 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs sm:text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 font-sans"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCustomCardSubmit}
+                      disabled={!cardInputText.trim()}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neon-cyan hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-mono font-bold text-xs transition-all shadow-md cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 fill-current" />
+                      Submit Custom Issue
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
