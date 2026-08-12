@@ -1,5 +1,5 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { streamText } from 'ai';
+import { streamText, convertToCoreMessages } from 'ai';
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -24,7 +24,8 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: openrouter.chat(targetModel),
-      messages: body.messages,
+      system: 'You are an expert Embedded Systems AI Co-Pilot for ECE 515.2. Help the user diagnose ESP32 and IoT hardware faults conversationally.',
+      messages: convertToCoreMessages(body.messages),
     });
 
     console.log('Stream successfully connected to OpenRouter.');
