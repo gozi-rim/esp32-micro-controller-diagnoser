@@ -11,117 +11,130 @@ import {
   History,
   ShieldCheck,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Activity,
+  Layers,
+  Gauge,
+  ShieldAlert
 } from "lucide-react";
+import { LogEntry } from "./HardwareLogsView";
 
 interface DashboardViewProps {
   onStartDiagnostic: (categoryKey?: string) => void;
   onViewLogs: () => void;
+  recentLogs?: LogEntry[];
 }
 
 export function DashboardView({
   onStartDiagnostic,
-  onViewLogs
+  onViewLogs,
+  recentLogs = []
 }: DashboardViewProps) {
   const faultTrees = [
     {
       key: "brownout",
-      name: "Brownout Resets & Power Rail",
+      name: "Power & Brownouts",
       icon: Zap,
-      color: "text-rose-400 border-rose-800/60 bg-rose-950/40",
-      description: "Diagnosing 350-500mA RF transmit current spikes, AMS1117 LDO voltage drops & decoupling."
+      accent: "text-rose-400 border-rose-500/30 bg-rose-500/10",
+      description: "Diagnose 350–500mA RF inrush spikes, AMS1117 LDO dropout & decoupling caps."
     },
     {
       key: "espnow",
-      name: "ESP-NOW MAC Pairing & Peers",
+      name: "ESP-NOW MAC & Peers",
       icon: Share2,
-      color: "text-neon-cyan border-cyan-800/60 bg-cyan-950/40",
-      description: "Troubleshooting primary Wi-Fi channel sync, Station vs AP MAC mismatches & peer capacity."
+      accent: "text-[#00f2fe] border-[#00f2fe]/30 bg-[#00f2fe]/10",
+      description: "Troubleshoot 2.4GHz Wi-Fi channel sync, STA vs AP MAC mismatches & 20-peer tables."
     },
     {
       key: "wifi",
-      name: "Wi-Fi Stack & WDT Timeouts",
+      name: "Wi-Fi & FreeRTOS WDT",
       icon: Wifi,
-      color: "text-emerald-green border-emerald-800/60 bg-emerald-950/40",
-      description: "Resolving FreeRTOS Task Watchdog blocking loops, 5GHz band steering & DHCP timeouts."
+      accent: "text-[#10b981] border-[#10b981]/30 bg-[#10b981]/10",
+      description: "Resolve FreeRTOS Task Watchdog blocking loops, 5GHz band steering & DHCP timeouts."
     },
     {
       key: "gpio",
-      name: "GPIO Logic & 5V Interfacing",
+      name: "GPIO 5V Overvoltage",
       icon: Cpu,
-      color: "text-amber-400 border-amber-800/60 bg-amber-950/40",
-      description: "Identifying 3.3V LVCMOS gate breakdown, 5V level shifter requirements & inductive relay back-EMF."
+      accent: "text-[#f59e0b] border-[#f59e0b]/30 bg-[#f59e0b]/10",
+      description: "Identify 3.3V LVCMOS gate breakdown, level shifter requirements & relay back-EMF."
     },
     {
       key: "antenna",
-      name: "Antenna, RSSI & 2.4GHz Noise",
+      name: "Antenna & RF Noise",
       icon: Radio,
-      color: "text-purple-400 border-purple-800/60 bg-purple-950/40",
-      description: "Diagnosing u.FL 0402 selector jumper alignment, metal enclosure Faraday shielding & ISM noise."
+      accent: "text-purple-400 border-purple-500/30 bg-purple-500/10",
+      description: "Diagnose u.FL 0402 selector jumper alignment, metal Faraday shields & ISM noise."
+    },
+    {
+      key: "i2c",
+      name: "I2C Bus & Display",
+      icon: Layers,
+      accent: "text-[#00f2fe] border-[#00f2fe]/30 bg-[#00f2fe]/10",
+      description: "Solve open-drain SDA/SCL lockups, missing 4.7kΩ pull-ups & 7-bit NACK address errors."
+    },
+    {
+      key: "spi",
+      name: "SPI Bus & SD Mount",
+      icon: Activity,
+      accent: "text-[#10b981] border-[#10b981]/30 bg-[#10b981]/10",
+      description: "Fix >20MHz clock slew degradation on breadboards & floating Chip Select (CS) lines."
+    },
+    {
+      key: "adc",
+      name: "ADC2 & Wi-Fi Radio",
+      icon: Gauge,
+      accent: "text-[#f59e0b] border-[#f59e0b]/30 bg-[#f59e0b]/10",
+      description: "Isolate ADC2 SAR controller lockout when Wi-Fi is active; migrate to ADC1 pins."
+    },
+    {
+      key: "strap",
+      name: "Bootloader Strapping",
+      icon: ShieldAlert,
+      accent: "text-[#ef4444] border-[#ef4444]/30 bg-[#ef4444]/10",
+      description: "Resolve GPIO 0, 2, 12, 15 external bootloader download traps & 1.8V flash mismatches."
     }
   ];
 
-  const recentLogs = [
-    {
-      id: "LOG-9402",
-      time: "10 mins ago",
-      fault: "Brownout detector triggered during Wi-Fi setup",
-      category: "Brownout",
-      severity: "CRITICAL"
-    },
-    {
-      id: "LOG-9398",
-      time: "1 hour ago",
-      fault: "ESP-NOW send callback returned status 1 (FAIL)",
-      category: "ESP-NOW",
-      severity: "WARNING"
-    },
-    {
-      id: "LOG-9385",
-      time: "3 hours ago",
-      fault: "Task watchdog timer (TWDT) triggered on loop()",
-      category: "Wi-Fi",
-      severity: "CRITICAL"
-    }
-  ];
+  const displayRecent = recentLogs.slice(0, 5);
 
   return (
     <div className="w-full space-y-8 animate-fadeIn">
-      {/* Hero Banner / Primary CTA */}
-      <div className="w-full relative overflow-hidden rounded-2xl bg-surface-card border border-card-border p-6 sm:p-10 shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-neon-cyan/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Hero Workbench Banner */}
+      <div className="w-full relative overflow-hidden rounded-2xl bg-[#161b22] border border-white/[0.08] p-6 sm:p-10 shadow-2xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#00f2fe]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#10b981]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="w-full space-y-4 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-cyan-950/80 text-neon-cyan border border-cyan-800/60">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            ECE 515.2 Rule-Based Expert System
+            ECE 515.2 Rule-Based Hardware Expert System
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-            Localized IoT &amp; Embedded Hardware <br />
-            <span className="text-neon-cyan font-mono">Diagnostic Engine</span>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight font-sans">
+            ESP32 Microcontroller &amp; IoT <br />
+            <span className="text-[#00f2fe] font-mono">Hardware Diagnostic Workbench</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-sans max-w-4xl">
-            Instantly diagnose power supply brownout loops, ESP-NOW MAC pairing failures, FreeRTOS task watchdog hangs, and 5V GPIO over-voltage destruction on ESP32 microcontrollers using deterministic forward-chaining rule trees.
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans max-w-3xl">
+            Instantly troubleshoot power rail brownout loops, ESP-NOW peer pairing drops, FreeRTOS task watchdog hangs, 5V GPIO destruction, and ADC2 radio conflicts using deterministic forward-chaining rule trees.
           </p>
 
-          <div className="pt-4 flex flex-wrap items-center gap-4">
+          <div className="pt-3 flex flex-wrap items-center gap-3.5">
             <button
               onClick={() => onStartDiagnostic()}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-neon-cyan hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-lg hover:shadow-cyan-500/30"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#00f2fe] hover:bg-[#00d8e4] text-slate-950 font-bold text-xs sm:text-sm font-mono transition-all shadow-lg hover:shadow-[0_0_20px_rgba(0,242,254,0.3)] cursor-pointer"
             >
               <Play className="w-4 h-4 fill-current" />
-              Start System Diagnostic Scan
+              Launch Active Diagnostic Scan
             </button>
 
             <button
               onClick={onViewLogs}
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-card-border transition-colors text-sm font-mono"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-slate-300 hover:text-white border border-white/[0.08] hover:border-white/[0.14] transition-all text-xs sm:text-sm font-mono cursor-pointer shadow-sm"
             >
               <History className="w-4 h-4 text-slate-400" />
-              View Hardware Logs
+              View Telemetry Logs ({recentLogs.length})
             </button>
           </div>
         </div>
@@ -129,74 +142,74 @@ export function DashboardView({
 
       {/* System Metrics Strip */}
       <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-surface-card border border-card-border space-y-1">
-          <p className="text-[11px] font-mono text-slate-400 uppercase">Fault Trees</p>
-          <p className="text-xl font-bold font-mono text-white">5 Hardware Domains</p>
-          <p className="text-[10px] text-slate-500">Power, ESP-NOW, Wi-Fi, GPIO, RF</p>
+        <div className="p-4 rounded-2xl bg-[#161b22] border border-white/[0.08] space-y-1 shadow-sm">
+          <p className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Knowledge Trees</p>
+          <p className="text-lg font-bold font-mono text-white">9 Failure Domains</p>
+          <p className="text-[10px] text-slate-500 font-sans">Power, ESP-NOW, Wi-Fi, GPIO, RF, I2C, SPI, ADC, Boot</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-surface-card border border-card-border space-y-1">
-          <p className="text-[11px] font-mono text-slate-400 uppercase">Inference Engine</p>
-          <p className="text-xl font-bold font-mono text-neon-cyan">Forward-Chaining</p>
-          <p className="text-[10px] text-slate-500">Deterministic rule traversal</p>
+        <div className="p-4 rounded-2xl bg-[#161b22] border border-white/[0.08] space-y-1 shadow-sm">
+          <p className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Inference Engine</p>
+          <p className="text-lg font-bold font-mono text-[#00f2fe]">Forward-Chaining</p>
+          <p className="text-[10px] text-slate-500 font-sans">Deterministic rule matching</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-surface-card border border-card-border space-y-1">
-          <p className="text-[11px] font-mono text-slate-400 uppercase">Target Platform</p>
-          <p className="text-xl font-bold font-mono text-emerald-green">ESP32 / ESP-NOW</p>
-          <p className="text-[10px] text-slate-500">Dual Tensilica LX6 Micro</p>
+        <div className="p-4 rounded-2xl bg-[#161b22] border border-white/[0.08] space-y-1 shadow-sm">
+          <p className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Target Platform</p>
+          <p className="text-lg font-bold font-mono text-[#10b981]">ESP32 / ESP-NOW</p>
+          <p className="text-[10px] text-slate-500 font-sans">Dual Tensilica LX6 240MHz</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-surface-card border border-card-border space-y-1">
-          <p className="text-[11px] font-mono text-slate-400 uppercase">System Status</p>
-          <p className="text-xl font-bold font-mono text-white flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-green animate-pulse" />
+        <div className="p-4 rounded-2xl bg-[#161b22] border border-white/[0.08] space-y-1 shadow-sm">
+          <p className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Diagnostic Core</p>
+          <p className="text-lg font-bold font-mono text-white flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
             100% Operational
           </p>
-          <p className="text-[10px] text-slate-500">Zero latency inference</p>
+          <p className="text-[10px] text-slate-500 font-sans">Live telemetry session capture</p>
         </div>
       </div>
 
-      {/* 5 Fault Tree Quick Launch Cards - Fluid 5-column layout on XL screens */}
-      <div className="w-full space-y-4">
+      {/* 9 Fault Tree Quick Launch Cards */}
+      <div className="w-full space-y-3.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-neon-cyan" />
-            Hardware Diagnostic Knowledge Domains
+          <h2 className="text-base font-bold text-white font-mono flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#00f2fe]" />
+            Hardware Diagnostic Failure Domains (9 Trees)
           </h2>
           <span className="text-xs text-slate-400 font-mono">
-            Click any domain to jump directly
+            Select a domain to jump directly
           </span>
         </div>
 
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {faultTrees.map((tree) => {
             const Icon = tree.icon;
             return (
               <div
                 key={tree.key}
                 onClick={() => onStartDiagnostic(tree.key)}
-                className="group p-5 rounded-2xl bg-surface-card hover:bg-slate-800/90 border border-card-border hover:border-neon-cyan transition-all cursor-pointer shadow-lg flex flex-col justify-between"
+                className="group p-5 rounded-2xl bg-[#161b22] hover:bg-[#21262d] border border-white/[0.08] hover:border-[#00f2fe]/40 transition-all cursor-pointer shadow-md flex flex-col justify-between"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className={`p-2.5 rounded-xl border ${tree.color}`}>
-                      <Icon className="w-5 h-5" />
+                    <div className={`p-2.5 rounded-xl border ${tree.accent}`}>
+                      <Icon className="w-4 h-4" />
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-neon-cyan transform group-hover:translate-x-1 transition-all" />
+                    <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-[#00f2fe] transform group-hover:translate-x-1 transition-all" />
                   </div>
 
-                  <h3 className="text-base font-bold text-white group-hover:text-neon-cyan transition-colors">
+                  <h3 className="text-sm font-semibold text-white group-hover:text-[#00f2fe] transition-colors font-sans">
                     {tree.name}
                   </h3>
 
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <p className="text-xs text-slate-400 leading-relaxed font-sans">
                     {tree.description}
                   </p>
                 </div>
 
-                <div className="pt-4 mt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-neon-cyan">
-                  <span>Diagnose Issue</span>
+                <div className="pt-3.5 mt-3 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono text-[#00f2fe]">
+                  <span>Diagnose Domain</span>
                   <span className="text-slate-500 group-hover:text-slate-300">→</span>
                 </div>
               </div>
@@ -205,54 +218,66 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Recent Diagnostic Sessions History Preview */}
-      <div className="w-full space-y-4">
+      {/* Recent Session Logs Preview */}
+      <div className="w-full space-y-3.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-            <History className="w-5 h-5 text-emerald-green" />
-            Recent Session Logs
+          <h2 className="text-base font-bold text-white font-mono flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[#10b981]" />
+            Recent Telemetry Sessions ({recentLogs.length})
           </h2>
           <button
             onClick={onViewLogs}
-            className="text-xs font-mono text-neon-cyan hover:underline"
+            className="text-xs font-mono text-[#00f2fe] hover:underline cursor-pointer"
           >
-            View All Logs →
+            View All Logs ({recentLogs.length}) →
           </button>
         </div>
 
-        <div className="w-full bg-surface-card border border-card-border rounded-2xl overflow-hidden shadow-xl">
-          <div className="divide-y divide-slate-800">
-            {recentLogs.map((log) => (
+        <div className="w-full bg-[#161b22] border border-white/[0.08] rounded-2xl overflow-hidden shadow-xl">
+          <div className="divide-y divide-white/[0.06]">
+            {displayRecent.map((log) => (
               <div
                 key={log.id}
-                className="p-4 flex flex-wrap items-center justify-between gap-4 hover:bg-slate-800/50 transition-colors text-xs font-mono"
+                onClick={onViewLogs}
+                className="p-4 flex flex-wrap items-center justify-between gap-4 hover:bg-[#21262d]/50 transition-colors text-xs font-mono cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400">
+                  <span className="px-2 py-0.5 rounded-lg bg-[#0d1117] border border-white/[0.08] text-[#00f2fe] font-bold">
                     {log.id}
                   </span>
-                  <span className="text-slate-200 font-sans font-medium text-sm">
-                    {log.fault}
+                  {log.ruleId && (
+                    <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400 text-[10px]">
+                      {log.ruleId}
+                    </span>
+                  )}
+                  <span className="text-slate-200 font-sans font-medium text-xs sm:text-sm">
+                    {log.fault || log.diagnosisTitle}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
+                  <span className="px-2 py-0.5 rounded-md bg-[#0d1117] border border-white/[0.06] text-slate-400 text-[11px]">
                     {log.category}
                   </span>
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                       log.severity === "CRITICAL"
-                        ? "bg-rose-950 text-rose-400 border border-rose-800"
-                        : "bg-amber-950 text-amber-400 border border-amber-800"
+                        ? "bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/30"
+                        : "bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/30"
                     }`}
                   >
                     {log.severity}
                   </span>
-                  <span className="text-slate-500 text-[11px]">{log.time}</span>
+                  <span className="text-slate-500 text-[11px]">{log.timestamp}</span>
                 </div>
               </div>
             ))}
+
+            {displayRecent.length === 0 && (
+              <div className="p-8 text-center text-slate-500 text-xs font-mono">
+                No active diagnostic sessions recorded yet. Launch a scan to record telemetry logs.
+              </div>
+            )}
           </div>
         </div>
       </div>

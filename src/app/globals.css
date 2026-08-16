@@ -1,22 +1,532 @@
 @import "tailwindcss";
 
 @theme {
-  --color-deep-slate: #0F172A;
-  --color-surface-card: #1E293B;
-  --color-card-border: #334155;
-  --color-neon-cyan: #06B6D4;
-  --color-emerald-green: #10B981;
+  --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-mono), "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --color-canvas: #0a0c10;
+  --color-canvas-subtle: #0d1117;
+  --color-surface-card: #161b22;
+  --color-surface-elevated: #21262d;
+  --color-surface-overlay: #1c2128;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.14);
+  --color-border-active: rgba(0, 242, 254, 0.4);
+
+  --color-cyan-pulse: #00f2fe;
+  --color-cyan-glow: #06b6d4;
+  --color-emerald-pulse: #10b981;
+  --color-amber-alert: #f59e0b;
+  --color-rose-alert: #ef4444;
+
+  /* Backward-compatible aliases */
+  --color-deep-slate: #0a0c10;
+  --color-card-border: rgba(255, 255, 255, 0.08);
+  --color-neon-cyan: #00f2fe;
+  --color-emerald-green: #10b981;
 }
 
 :root {
-  --background: #0F172A;
-  --foreground: #F8FAFC;
+  --background: #0a0c10;
+  --foreground: #f0f6fc;
   color-scheme: dark;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Custom telemetry subtle grid background */
+.bg-telemetry-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glassmorphic hardware surface */
+.hardware-card {
+  background-color: rgba(22, 27, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hardware-card:hover {
+  border-color: rgba(0, 242, 254, 0.3);
+  box-shadow: 0 8px 32px -2px rgba(0, 242, 254, 0.08);
+}
+
+/* Custom sleek Apple Pro dark scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0c10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #21262d;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #30363d;
+}
+
+/* Sub-millisecond animation utilities */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.96); }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================
+   LANDING PAGE & SIGN-IN ANIMATIONS
+   ========================================== */
+
+/* Gradient text shimmer */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.text-gradient-animated {
+  background: linear-gradient(135deg, #00f2fe, #10b981, #00f2fe, #06b6d4);
+  background-size: 300% 300%;
+  animation: gradientShift 6s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Floating glow orb animation */
+@keyframes floatOrb {
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.5; }
+  33% { transform: translateY(-20px) scale(1.05); opacity: 0.7; }
+  66% { transform: translateY(10px) scale(0.97); opacity: 0.4; }
+}
+
+.animate-float-orb {
+  animation: floatOrb 8s ease-in-out infinite;
+}
+
+.animate-float-orb-delayed {
+  animation: floatOrb 8s ease-in-out 2s infinite;
+}
+
+.animate-float-orb-slow {
+  animation: floatOrb 12s ease-in-out 4s infinite;
+}
+
+/* Fade in up for scroll reveals */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in-up-d1 { animation: fadeInUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 100ms forwards; }
+.animate-fade-in-up-d2 { animation: fadeInUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 200ms forwards; }
+.animate-fade-in-up-d3 { animation: fadeInUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 300ms forwards; }
+.animate-fade-in-up-d4 { animation: fadeInUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 400ms forwards; }
+.animate-fade-in-up-d5 { animation: fadeInUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 500ms forwards; }
+.animate-fade-in-up-d6 { animation: fadeInUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 600ms forwards; }
+
+/* Counter tick */
+@keyframes counterPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.animate-counter-pulse {
+  animation: counterPulse 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Shimmer loading sweep */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Orb pulse for sign-in page */
+@keyframes orbPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
+  25% { transform: scale(1.1) rotate(90deg); opacity: 0.8; }
+  50% { transform: scale(0.95) rotate(180deg); opacity: 0.5; }
+  75% { transform: scale(1.05) rotate(270deg); opacity: 0.7; }
+}
+
+.animate-orb-pulse {
+  animation: orbPulse 15s ease-in-out infinite;
+}
+
+/* Glassmorphic card for landing page */
+.glass-card {
+  background: rgba(22, 27, 34, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 242, 254, 0.25);
+  box-shadow: 0 16px 48px rgba(0, 242, 254, 0.06), 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Glassmorphic nav */
+.glass-nav {
+  background: rgba(10, 12, 16, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Sign-in input focus */
+.input-focus-glow:focus {
+  outline: none;
+  border-color: rgba(0, 242, 254, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.12), 0 0 20px rgba(0, 242, 254, 0.06);
+}
+
+/* Button press effect */
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Spinner */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-fast {
+  animation: spin 600ms linear infinite;
+}
+
+/* Dashboard preview float */
+@keyframes dashboardFloat {
+  0%, 100% { transform: translateY(0px) rotateX(0deg); }
+  50% { transform: translateY(-12px) rotateX(1deg); }
+}
+
+.animate-dashboard-float {
+  animation: dashboardFloat 6s ease-in-out infinite;
+}
+
+/* Line connector growth */
+@keyframes lineGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.animate-line-grow {
+  animation: lineGrow 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .text-gradient-animated,
+  .animate-float-orb,
+  .animate-float-orb-delayed,
+  .animate-float-orb-slow,
+  .animate-fade-in-up,
+  .animate-fade-in-up-d1,
+  .animate-fade-in-up-d2,
+  .animate-fade-in-up-d3,
+  .animate-fade-in-up-d4,
+  .animate-fade-in-up-d5,
+  .animate-fade-in-up-d6,
+  .animate-counter-pulse,
+  .animate-shimmer,
+  .animate-orb-pulse,
+  .animate-dashboard-float,
+  .animate-line-grow,
+  .animate-spin-fast {
+    animation: none !important;
+  }
+
+  .text-gradient-animated {
+    background-position: 0% 50%;
+  }
+
+  .glass-card:hover {
+    transform: none;
+  }
+
+  .btn-press:active {
+    transform: none;
+  }
+}
+
+/* ==========================================
+   @media print — PDF / PAPER EXPORT STYLES
+   ==========================================
+   Strips dark backgrounds, hides interactive chrome (sidebar, header, 
+   oscilloscope, serial monitor), and reformats the diagnosis report 
+   into a clean, high-contrast, printer-friendly document.
+   ========================================== */
+
+@media print {
+  /* ---- Page geometry ---- */
+  @page {
+    size: A4 portrait;
+    margin: 18mm 14mm 18mm 14mm;
+  }
+
+  /* ---- Global resets ---- */
+  *,
+  *::before,
+  *::after {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    -webkit-font-smoothing: auto !important;
+  }
+
+  /* ---- Hide interactive / non-printable chrome ---- */
+  /* Sidebar */
+  aside,
+  nav,
+  [data-sidebar],
+  .sidebar-container {
+    display: none !important;
+  }
+
+  /* Header bar */
+  header,
+  [data-header] {
+    display: none !important;
+  }
+
+  /* Buttons, modals, tooltips, oscilloscope, serial monitor */
+  button,
+  [role="dialog"],
+  [data-modal],
+  canvas,
+  .oscilloscope-container,
+  .serial-monitor-container {
+    display: none !important;
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Animations */
+  .animate-pulse,
+  .animate-pulse-subtle,
+  .animate-fadeIn,
+  .animate-spin {
+    animation: none !important;
+  }
+
+  /* Glow / blur decorative layers */
+  .blur-3xl,
+  .blur-2xl,
+  .pointer-events-none[class*="bg-"] {
+    display: none !important;
+  }
+
+  /* ---- Layout: full-width single column ---- */
+  .h-screen,
+  .overflow-hidden,
+  .overflow-y-auto {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  main {
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* ---- Card surfaces ---- */
+  .bg-\[\#161b22\],
+  .bg-\[\#0d1117\],
+  .bg-\[\#0a0c10\],
+  [class*="bg-surface"],
+  .hardware-card {
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* ---- Typography: high-contrast for paper ---- */
+  h1, h2, h3, h4, h5, h6 {
+    color: #111827 !important;
+    page-break-after: avoid;
+  }
+
+  p, li, span, div, td, th, code, pre {
+    color: #1f2937 !important;
+  }
+
+  /* Monospace / code blocks */
+  pre, code {
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    color: #065f46 !important;
+    font-size: 9pt !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    page-break-inside: avoid;
+  }
+
+  /* ---- Severity badges: print-safe solid fills ---- */
+  [class*="bg-\[#ef4444\]"] {
+    background: #fef2f2 !important;
+    border-color: #ef4444 !important;
+    color: #b91c1c !important;
+  }
+
+  [class*="bg-\[#f59e0b\]"] {
+    background: #fffbeb !important;
+    border-color: #f59e0b !important;
+    color: #92400e !important;
+  }
+
+  [class*="bg-\[#00f2fe\]"],
+  [class*="bg-\[#10b981\]"] {
+    background: #ecfdf5 !important;
+    border-color: #10b981 !important;
+    color: #065f46 !important;
+  }
+
+  /* ---- Accent text: readable on white ---- */
+  .text-\[\#00f2fe\] {
+    color: #0891b2 !important;
+  }
+
+  .text-\[\#10b981\] {
+    color: #059669 !important;
+  }
+
+  .text-\[\#ef4444\] {
+    color: #dc2626 !important;
+  }
+
+  .text-\[\#f59e0b\] {
+    color: #d97706 !important;
+  }
+
+  .text-slate-400,
+  .text-slate-500 {
+    color: #6b7280 !important;
+  }
+
+  .text-slate-200,
+  .text-slate-300,
+  .text-white {
+    color: #111827 !important;
+  }
+
+  /* ---- Borders: visible on white paper ---- */
+  .border-white\/\[0\.08\],
+  .border-white\/\[0\.06\],
+  .border-white\/\[0\.12\] {
+    border-color: #e5e7eb !important;
+  }
+
+  /* ---- Grid: force single-column stacking ---- */
+  .lg\:grid-cols-12,
+  .lg\:col-span-6 {
+    grid-template-columns: 1fr !important;
+    grid-column: span 1 !important;
+  }
+
+  .grid-cols-1.md\:grid-cols-3,
+  .grid-cols-1.md\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ---- Page breaks ---- */
+  .rounded-2xl {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 12pt;
+  }
+
+  /* ---- Print-only report header watermark ---- */
+  main::before {
+    content: "NetDiag.Expert — ESP32 Diagnostic Report • ECE 515.2 • Group 11 • University of Port Harcourt";
+    display: block;
+    text-align: center;
+    font-size: 8pt;
+    font-family: var(--font-mono), monospace;
+    color: #9ca3af;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 8pt;
+    margin-bottom: 16pt;
+  }
+
+  /* ---- Print-only footer ---- */
+  main::after {
+    content: "Generated by NetDiag.Expert Forward-Chaining Inference Engine • Printed " attr(data-print-date);
+    display: block;
+    text-align: center;
+    font-size: 7pt;
+    font-family: var(--font-mono), monospace;
+    color: #9ca3af;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 8pt;
+    margin-top: 16pt;
+  }
+
+  /* ---- Telemetry grid background: remove ---- */
+  .bg-telemetry-grid {
+    background-image: none !important;
+  }
+
+  /* ---- Links: show URL after text ---- */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+    color: #6b7280;
+  }
+}

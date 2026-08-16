@@ -2,12 +2,9 @@
  * Localized Network & IoT Troubleshooter Knowledge Base
  * Rule-based decision tree object for ESP32 & ESP-NOW localized hardware & network failures.
  * 
- * Fault Trees Covered:
- * 1. Brownout Resets (RF Transmit Power & Voltage Drops)
- * 2. ESP-NOW MAC Pairing & Peer Registration
- * 3. Wi-Fi Connection Timeouts (Band Steering, Watchdog & Non-blocking code)
- * 4. GPIO Voltage Mismatches (3.3V LVCMOS vs 5V TTL destruction)
- * 5. Antenna / 2.4GHz Spectrum Noise & Packet Loss
+ * Formal Production Rules & Expert System Schema (ECE 515.2 AI Standards)
+ * Includes Formal Rule IDs, Confidence / Certainty Factors (CF: 0.0 - 1.0),
+ * Antecedents, Root Cause Analysis, and Exact Hardware & Firmware Remediation.
  */
 
 export const KNOWLEDGE_BASE_CATEGORIES = {
@@ -15,7 +12,11 @@ export const KNOWLEDGE_BASE_CATEGORIES = {
   ESPNOW: { id: "espnow", name: "ESP-NOW MAC Pairing & Peer Sync", icon: "Share2" },
   WIFI: { id: "wifi", name: "Wi-Fi Connection & Stack Timeouts", icon: "Wifi" },
   GPIO: { id: "gpio", name: "GPIO Voltage & Logic Interfacing", icon: "Cpu" },
-  ANTENNA: { id: "antenna", name: "Antenna, RSSI & 2.4GHz Noise", icon: "Radio" }
+  ANTENNA: { id: "antenna", name: "Antenna, RSSI & 2.4GHz Noise", icon: "Radio" },
+  I2C: { id: "i2c", name: "I2C Bus & Display Driver Lockup", icon: "Layers" },
+  SPI: { id: "spi", name: "SPI Bus & CS Signal Integrity", icon: "Activity" },
+  ADC: { id: "adc", name: "ADC2 & Wi-Fi Radio Pin Conflict", icon: "Gauge" },
+  STRAP: { id: "strap", name: "Bootloader Strapping Pin Hangs", icon: "ShieldAlert" }
 };
 
 export const knowledgeBase = {
@@ -26,46 +27,75 @@ export const knowledgeBase = {
     // ==========================================
     "root_category_select": {
       id: "root_category_select",
+      ruleId: "RULE-ROOT-01",
       type: "question",
       category: "root",
-      title: "Primary Symptom Selection",
-      question: "What specific failure mode or symptom is your ESP32 / IoT node exhibiting?",
-      description: "Select the primary issue observed on your hardware or serial monitor logs.",
+      title: "Primary Symptom & Hardware Domain Selection",
+      question: "What specific failure mode or symptom is your ESP32 / IoT hardware exhibiting?",
+      description: "Select the primary observed anomaly from your physical circuit, multimeter measurements, or serial monitor logs.",
       options: [
         {
           id: "opt_brownout",
           label: "Spontaneous Reboots / 'Brownout detector was triggered'",
-          description: "Device reboots unexpectedly during boot, Wi-Fi initialization, or packet transmit.",
+          description: "Device reboots unexpectedly during boot, Wi-Fi initialization, or high current RF packet transmit.",
           nextNodeId: "q_brownout_timing",
-          keywords: ["brownout", "reboot", "restart", "trigger", "spontaneous", "power", "reset"]
+          keywords: ["brownout", "reboot", "restart", "trigger", "spontaneous", "power", "reset", "drop", "voltage", "2.5v"]
         },
         {
           id: "opt_espnow",
           label: "ESP-NOW Communication Failure / Delivery Error",
-          description: "ESP-NOW packets fail to send, return ESP_ERR_ESPNOW_NOT_INIT, or peer fails to respond.",
+          description: "ESP-NOW packets fail to send, return status 1 (FAIL), ESP_ERR_ESPNOW_NOT_INIT, or peer fails to ACK.",
           nextNodeId: "q_espnow_error_type",
-          keywords: ["espnow", "esp-now", "mac", "pairing", "peer", "delivery", "send", "packet", "fail"]
+          keywords: ["espnow", "esp-now", "mac", "pairing", "peer", "delivery", "send", "packet", "fail", "callback"]
         },
         {
           id: "opt_wifi",
-          label: "Wi-Fi Connection Timeout / Router Hangs",
-          description: "ESP32 fails to connect to router, hangs in WiFi.begin loop, or triggers Task Watchdog Timer (WDT).",
+          label: "Wi-Fi Connection Timeout / FreeRTOS Watchdog Hangs",
+          description: "ESP32 fails to connect to router, hangs in WiFi.begin loop, or triggers Task Watchdog Timer (TWDT).",
           nextNodeId: "q_wifi_symptom",
-          keywords: ["wifi", "wi-fi", "connect", "timeout", "hang", "router", "ssid"]
+          keywords: ["wifi", "wi-fi", "connect", "timeout", "hang", "router", "ssid", "watchdog", "twdt", "freertos"]
         },
         {
           id: "opt_gpio",
-          label: "GPIO Pin Failure / Sensor Reading Anomaly",
-          description: "Digital inputs read incorrect values, GPIO hot to touch, or board unresponsive after interfacing 5V sensor/relay.",
+          label: "GPIO Pin Failure / 5V Overvoltage Destruction",
+          description: "Digital inputs read incorrect values, GPIO pin hot to touch, or board unresponsive after interfacing 5V sensor/relay.",
           nextNodeId: "q_gpio_voltage_level",
-          keywords: ["gpio", "pin", "sensor", "voltage", "logic", "relay", "read", "digital"]
+          keywords: ["gpio", "pin", "sensor", "voltage", "logic", "relay", "read", "digital", "5v", "hot", "latchup"]
         },
         {
           id: "opt_antenna",
           label: "High Packet Loss / Low RSSI / Signal Degradation",
-          description: "Poor RF range, frequent packet drop, RSSI below -85dBm, or range drops sharply indoors.",
+          description: "Poor RF range, frequent packet drop, RSSI below -85dBm, or range drops sharply inside metal cabinets.",
           nextNodeId: "q_antenna_type",
-          keywords: ["antenna", "rssi", "packet", "loss", "signal", "degradation", "range", "rf"]
+          keywords: ["antenna", "rssi", "packet", "loss", "signal", "degradation", "range", "rf", "dbm", "faraday"]
+        },
+        {
+          id: "opt_i2c",
+          label: "I2C Bus Lockup / OLED Display & Sensor Freeze",
+          description: "Microcontroller freezes during Wire.begin() or Wire.endTransmission(); SDA line stuck LOW.",
+          nextNodeId: "q_i2c_symptom",
+          keywords: ["i2c", "wire", "sda", "scl", "oled", "display", "freeze", "lockup", "pullup", "sensor"]
+        },
+        {
+          id: "opt_spi",
+          label: "SPI Bus Corruption / SD Card Read Failure",
+          description: "SPI SD card fails to mount, MISO/MOSI frame CRC errors, or peripheral conflicts on shared SPI bus.",
+          nextNodeId: "q_spi_symptom",
+          keywords: ["spi", "sd", "card", "mount", "miso", "mosi", "sclk", "cs", "chip select", "flash"]
+        },
+        {
+          id: "opt_adc",
+          label: "ADC Analog Sensor Reads 0 or Garbage during Wi-Fi",
+          description: "Analog readings on GPIO pins fluctuate wildly or read zero as soon as WiFi.begin() is called.",
+          nextNodeId: "q_adc_wifi_conflict",
+          keywords: ["adc", "analog", "analogread", "sensor", "noise", "zero", "conflict", "adc2"]
+        },
+        {
+          id: "opt_strap",
+          label: "Perpetual Boot Failure / Bootloader Mode Lockup",
+          description: "ESP32 prints 'waiting for download' or crashes immediately on reset when external circuit is attached.",
+          nextNodeId: "q_strapping_pins",
+          keywords: ["strap", "strapping", "bootloader", "download", "boot", "gpio0", "gpio2", "gpio12", "mtdi"]
         }
       ]
     },
@@ -75,697 +105,658 @@ export const knowledgeBase = {
     // ==========================================
     "q_brownout_timing": {
       id: "q_brownout_timing",
+      ruleId: "RULE-PWR-Q01",
       type: "question",
       category: "brownout",
-      title: "Brownout Reset Timing",
-      question: "When exactly does the ESP32 reset or print the brownout error on the Serial Monitor?",
-      description: "Observing the exact moment of brownout helps pinpoint transient current vs steady-state regulator saturation.",
+      title: "Brownout Reset Timing & Manifestation",
+      question: "When exactly does the ESP32 reset or print the brownout detector error on the Serial Monitor?",
+      description: "Observing the exact moment of brownout helps pinpoint transient inrush current vs steady-state regulator saturation.",
       options: [
         {
           id: "opt_bo_wifi_init",
           label: "Immediately when WiFi.begin() or esp_now_init() is called",
-          description: "Reset coincides precisely with RF power amplifier turn-on.",
+          description: "Reset coincides precisely with RF power amplifier calibration turn-on.",
           nextNodeId: "q_brownout_power_source",
-          keywords: ["wifi", "begin", "esp_now", "init", "transmit", "rf", "power", "amplifier"]
+          keywords: ["wifi", "begin", "esp_now", "init", "transmit", "rf", "power", "amplifier", "turn-on"]
         },
         {
           id: "opt_bo_continuous",
           label: "Continuous boot loop before main setup() completes",
-          description: "Board resets repeatedly even before Wi-Fi code is executed.",
+          description: "Board resets repeatedly even before Wi-Fi initialization code executes.",
           nextNodeId: "q_brownout_regulator_heat",
-          keywords: ["boot", "loop", "continuous", "setup", "reset", "before"]
+          keywords: ["boot", "loop", "continuous", "setup", "reset", "before", "perpetual"]
         }
       ]
     },
 
     "q_brownout_power_source": {
       id: "q_brownout_power_source",
+      ruleId: "RULE-PWR-Q02",
       type: "question",
       category: "brownout",
-      title: "Power Source & Decoupling",
+      title: "Power Source & Decoupling Capacitance",
       question: "How is the ESP32 powered, and is there external decoupling capacitance on the 3.3V rail?",
-      description: "ESP32 RF transmission causes 350mA - 500mA current spikes lasting tens of microseconds.",
+      description: "ESP32 RF transmission generates 350mA–500mA current spikes lasting tens of microseconds.",
       options: [
         {
           id: "opt_bo_usb_thin",
-          label: "Powered via PC USB port or thin long USB cable with NO extra capacitors",
-          description: "Standard USB cable without bulk storage near the 3.3V header.",
+          label: "Powered via PC USB port or long thin USB cable with NO extra capacitors",
+          description: "Standard USB cable without bulk storage near the 3.3V header pins.",
           nextNodeId: "diag_brownout_transient_spike",
-          keywords: ["usb", "pc", "cable", "thin", "capacitor", "capacitors", "no"]
+          keywords: ["usb", "pc", "cable", "thin", "capacitor", "capacitors", "no", "long"]
         },
         {
           id: "opt_bo_high_tx_power",
           label: "Powered via 5V Vin pin with max TX power setting (+20dBm)",
           description: "Linear LDO regulator (e.g. AMS1117-3.3) feeding ESP32 under maximum RF output.",
           nextNodeId: "diag_brownout_ldo_saturation",
-          keywords: ["vin", "5v", "tx", "power", "maximum", "max", "ldo"]
+          keywords: ["vin", "5v", "tx", "power", "maximum", "max", "ldo", "ams1117"]
         }
       ]
     },
 
     "q_brownout_regulator_heat": {
       id: "q_brownout_regulator_heat",
+      ruleId: "RULE-PWR-Q03",
       type: "question",
       category: "brownout",
       title: "Regulator Thermal & Input Voltage Check",
       question: "Is the onboard 3.3V LDO regulator hot to touch, or is Vin powered by >9V DC?",
-      description: "High input voltage across linear regulators creates extreme thermal dissipation (P = (Vin - 3.3) * I).",
+      description: "High input voltage across linear regulators creates extreme thermal dissipation (P = (Vin - 3.3V) * I).",
       options: [
         {
           id: "opt_bo_hot_reg",
           label: "Regulator is extremely hot, Vin is connected to 9V or 12V supply",
-          description: "Excessive thermal dropout causing thermal shutdown on AMS1117.",
+          description: "Excessive thermal dropout causing internal thermal shutdown on AMS1117.",
           nextNodeId: "diag_brownout_thermal_shutdown",
-          keywords: ["hot", "regulator", "9v", "12v", "supply", "heat"]
+          keywords: ["hot", "regulator", "9v", "12v", "supply", "heat", "thermal"]
         },
         {
           id: "opt_bo_under_voltage",
           label: "Regulator is cool, but VDD 3.3V rail measures below 3.0V under multimeter test",
-          description: "Input supply cannot source required base current.",
+          description: "Input power supply cannot source required base current.",
           nextNodeId: "diag_brownout_insufficient_source",
-          keywords: ["cool", "vdd", "3.3v", "3.0v", "rail", "multimeter", "measure"]
+          keywords: ["cool", "vdd", "3.3v", "3.0v", "rail", "multimeter", "measure", "undervoltage"]
         }
       ]
     },
 
     "diag_brownout_transient_spike": {
       id: "diag_brownout_transient_spike",
+      ruleId: "RULE-PWR-01",
       type: "diagnosis",
       category: "brownout",
+      confidenceFactor: 0.98,
+      formalRuleStatement: "IF (Event == 'WiFi.begin() / esp_now_init()') ∧ (PowerSource == 'USB_No_Decoupling') ∧ (VDD_Dip < 2.80V) THEN HYPOTHESIS('Transient RF Inrush Current & Cable Impedance Dip', CF=0.98)",
+      antecedents: [
+        "Wi-Fi Power Amplifier (PA) turn-on triggers 450mA instantaneous inrush spike",
+        "USB cable parasitic resistance and inductance causes transient voltage drop on 3.3V rail",
+        "Internal ESP32 brownout detector triggers at 2.80V threshold"
+      ],
       title: "Transient RF Inrush Current & Cable Impedance Dip",
       severity: "CRITICAL",
-      symptomSummary: "ESP32 resets with 'Brownout detector was triggered' when RF synthesizer and power amplifier (PA) calibrate during Wi-Fi or ESP-NOW startup.",
-      diagnosis: "Transient VDD Voltage Dip caused by high USB cable resistance and lack of bulk decoupling capacitors.",
-      rootCause: "When the ESP32 Wi-Fi radio activates, current consumption instantly surges from ~40mA to >400mA within microseconds. Thin USB conductors or high-ESR linear regulators experience an IR voltage drop, pulling the VDD 3.3V rail below the internal RTC brownout threshold (~2.43V - 2.8V).",
+      symptomSummary: "ESP32 boots successfully in serial monitor, but resets immediately when WiFi.begin() or esp_now_init() is called with 'Brownout detector was triggered'.",
+      diagnosis: "Transient Voltage Drop on 3.3V Rail during Wi-Fi RF Power Amplifier Turn-On.",
+      rootCause: "When the ESP32 Wi-Fi radio activates, current consumption jumps from ~40mA to >400mA in under 100 microseconds. Thin USB cables or low-quality USB ports introduce resistance causing the VDD rail to dip below the 2.8V internal brownout comparator threshold.",
       engineeringSolution: {
-        summary: "Install bulk low-ESR capacitance at the ESP32 power pins and upgrade the power delivery path.",
+        summary: "Solder a 470uF low-ESR electrolytic capacitor across 3V3 and GND pins, and reduce maximum Wi-Fi TX power.",
         steps: [
-          "Solder a 100µF to 470µF low-ESR electrolytic or tantalum capacitor directly across the ESP32 3V3 and GND header pins.",
-          "Add a 0.1µF ceramic capacitor in parallel with the bulk capacitor to filter high-frequency switching noise.",
-          "Replace long/thin USB charging cables with a short 22AWG high-current rated USB cable.",
-          "Ensure power supply can deliver at least 500mA continuous (1A peak) at 5V."
+          "Connect a 470uF to 1000uF low-ESR electrolytic capacitor directly across the ESP32 3V3 and GND header pins.",
+          "Add a 0.1uF ceramic capacitor in parallel to suppress high-frequency RF switching noise.",
+          "Use a short, thick USB cable (24 AWG power conductors or better).",
+          "Lower Wi-Fi TX power in code using esp_wifi_set_max_tx_power(52) (13dBm instead of default 20dBm)."
         ],
-        circuitDiagramNote: "Connect 470uF Electrolytic (+) to ESP32 3V3 pin and (-) to GND pin, positioned within 10mm of module pins.",
-        codeSnippet: "// Optional software workaround: reduce Wi-Fi TX power if power source cannot be upgraded immediately\n#include <esp_wifi.h>\n\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  WiFi.begin(ssid, password);\n  // Lower maximum RF TX power from +20dBm (80) to +13dBm (52) to reduce current spikes\n  esp_wifi_set_max_tx_power(52);\n}"
+        circuitDiagramNote: "Place 470uF capacitor as physically close to the ESP32 module VDD pin as possible.",
+        codeSnippet: "#include <esp_wifi.h>\n\nvoid setup() {\n  Serial.begin(115200);\n  WiFi.mode(WIFI_STA);\n  // Lower TX power to reduce peak current inrush\n  esp_wifi_set_max_tx_power(52); // ~13 dBm\n  WiFi.begin(\"SSID\", \"PASS\");\n}"
       }
     },
 
     "diag_brownout_ldo_saturation": {
       id: "diag_brownout_ldo_saturation",
+      ruleId: "RULE-PWR-02",
       type: "diagnosis",
       category: "brownout",
-      title: "LDO Voltage Dropout & High TX Power Draw",
-      severity: "WARNING",
-      symptomSummary: "ESP32 resets intermittently during heavy packet transmit bursts while powered via Vin.",
-      diagnosis: "AMS1117 / LDO Dropout Saturation under peak RF transmission (+20dBm output power).",
-      rootCause: "The onboard AMS1117 LDO regulator has a high dropout voltage (~1.1V to 1.3V at 800mA). If Vin drops below 4.5V under load, the 3.3V output rail collapses during max transmit power bursts.",
+      confidenceFactor: 0.95,
+      formalRuleStatement: "IF (PowerSupply == 'Vin_5V') ∧ (TX_Power == 'Max_20dBm') ∧ (LDO_Dropout_Exceeded == TRUE) THEN HYPOTHESIS('Linear Regulator LDO Dropout Saturation', CF=0.95)",
+      antecedents: [
+        "5V Vin supply line feeds onboard AMS1117-3.3 linear regulator",
+        "Regulator dropout voltage (1.1V - 1.3V) requires minimum 4.6V Vin under 500mA load",
+        "Weak 5V rail dips under load, starving regulator output below 3.0V"
+      ],
+      title: "Linear Regulator (LDO) Dropout Saturation",
+      severity: "CRITICAL",
+      symptomSummary: "ESP32 reboots intermittently under heavy transmission load or long ESP-NOW broadcast bursts.",
+      diagnosis: "AMS1117 Linear Regulator Dropout Saturation under Sustained 500mA Load.",
+      rootCause: "Standard AMS1117-3.3 regulators have a dropout voltage of 1.1V to 1.3V at 500mA. If the 5V input rail dips below 4.6V under load, the regulator output drops below 3.3V, triggering the brownout detector.",
       engineeringSolution: {
-        summary: "Supply minimum 5.0V to Vin or lower RF transmit power in software.",
+        summary: "Supply power via a high-efficiency DC-DC switching buck converter or high-current 3.3V regulated source.",
         steps: [
-          "Verify Vin voltage with an oscilloscope or fast multimeter during packet transmission to ensure Vin does not dip below 4.75V.",
-          "If using a battery supply, replace AMS1117 linear regulator with a high-efficiency 5V buck/boost converter (e.g. MP2307 or TPS63020).",
-          "Lower max TX power setting in firmware using esp_wifi_set_max_tx_power()."
+          "Verify the 5V power supply can source at least 1.5A continuous current.",
+          "Replace linear AMS1117 with a high-efficiency DC-DC step-down buck converter (e.g. MP1584 or LM2596).",
+          "Ensure input voltage to Vin pin remains above 4.75V at all times under peak load."
         ],
-        codeSnippet: "// Adjusting WiFi TX Power in ESP-IDF / Arduino ESP32\n#include <esp_wifi.h>\n// Set TX power to +15dBm (60 = 15dBm * 4)\nesp_wifi_set_max_tx_power(60);"
+        circuitDiagramNote: "DC-DC Buck Converter output (3.3V) should connect directly to 3V3 pin, bypassing onboard LDO."
       }
     },
 
     "diag_brownout_thermal_shutdown": {
       id: "diag_brownout_thermal_shutdown",
+      ruleId: "RULE-PWR-03",
       type: "diagnosis",
       category: "brownout",
-      title: "LDO Thermal Over-temperature Protection Shutdown",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (Vin >= 9.0V) ∧ (LDO_Temperature > 125C) THEN HYPOTHESIS('LDO Thermal Overload & Cyclic Thermal Shutdown', CF=0.99)",
+      antecedents: [
+        "Vin supply voltage is 9V - 12V DC into linear AMS1117 regulator",
+        "Thermal dissipation P = (12V - 3.3V) * 0.25A = 2.175 Watts",
+        "AMS1117 SOT-223 package thermal resistance exceeds limits, triggering thermal shutdown"
+      ],
+      title: "Onboard LDO Thermal Overload & Cyclic Thermal Shutdown",
       severity: "CRITICAL",
-      symptomSummary: "ESP32 reboots continuously after 1-2 minutes of operation; onboard regulator is extremely hot.",
-      diagnosis: "Linear Regulator Thermal Shutdown due to excessive Vin to VDD voltage differential.",
-      rootCause: "Powering Vin with 9V or 12V forces the AMS1117 LDO to drop 5.7V to 8.7V as heat: P = (12V - 3.3V) * 0.2A = 1.74 Watts. The SOT-223 package thermal resistance causes junction temperature to exceed 125°C, triggering internal thermal shutdown.",
+      symptomSummary: "ESP32 board runs for 10-30 seconds, gets extremely hot to touch, then resets continuously.",
+      diagnosis: "Linear Regulator Thermal Shutdown due to Excessive Vin Differential.",
+      rootCause: "Feeding 9V or 12V into Vin forces the AMS1117 linear regulator to dissipate (12V - 3.3V) * 0.25A = 2.175 Watts of pure heat into a tiny SOT-223 PCB copper footprint. The chip exceeds 125°C and shuts down safely, then restarts as it cools down, causing a continuous reboot loop.",
       engineeringSolution: {
-        summary: "Step down input voltage using a DC-DC Buck Converter before feeding Vin/ESP32.",
+        summary: "Step down 9V/12V supply to 5.0V using a DC-DC Buck Converter before connecting to ESP32 Vin.",
         steps: [
-          "Do NOT connect 9V or 12V directly to Vin pin of ESP32 dev boards.",
-          "Place an external DC-DC Buck Converter (e.g. LM2596 or mini MP1584EN) between 12V supply and ESP32 Vin pin, stepping voltage down to 5.0V.",
-          "Ensure common ground connection between buck converter and ESP32."
+          "Disconnect the 9V/12V power supply immediately from the ESP32 Vin pin.",
+          "Install a DC-DC Step-Down (Buck) Converter (e.g., MP1584EN, LM2596) between your 12V battery and ESP32.",
+          "Adjust buck converter output voltage to exactly 5.0V before connecting to the ESP32 5V/Vin pin."
         ],
-        circuitDiagramNote: "[12V DC Supply] ---> [MP1584 Buck Converter IN] ==> [5.0V OUT] ---> [ESP32 Vin Pin] & [GND] ---> [ESP32 GND]"
+        circuitDiagramNote: "12V Battery -> [DC-DC Buck Converter: 5.0V Output] -> ESP32 5V Vin Pin."
       }
     },
 
     "diag_brownout_insufficient_source": {
       id: "diag_brownout_insufficient_source",
+      ruleId: "RULE-PWR-04",
       type: "diagnosis",
       category: "brownout",
-      title: "Insufficient DC Current Capacity at Power Source",
+      confidenceFactor: 0.94,
+      formalRuleStatement: "IF (PowerSupply_CurrentRating < 500mA) ∧ (VDD_SteadyState < 3.0V) THEN HYPOTHESIS('Insufficient Power Supply Current Rating', CF=0.94)",
+      antecedents: [
+        "Power source maximum current rating is under 500mA (e.g. 100mA USB port or 9V alkaline battery)",
+        "Steady-state 3.3V rail measures below 3.0V under basic operating conditions"
+      ],
+      title: "Insufficient Power Supply Current Capacity (<500mA)",
       severity: "CRITICAL",
-      symptomSummary: "Multimeter reads 3.3V rail dropping below 3.0V under load; board resets repeatedly.",
-      diagnosis: "Power supply or battery internal resistance is too high to support ESP32 peak currents.",
-      rootCause: "Using weak power sources such as standard 9V alkaline transistor batteries (high internal resistance), unpowered USB hubs, or 100mA rated power adapters.",
+      symptomSummary: "ESP32 fails to boot or resets repeatedly; power LED on board is dim or flickering.",
+      diagnosis: "Power Supply Current Limit Starvation (< 500mA rating).",
+      rootCause: "The power source (e.g., 9V alkaline rectangular battery, unpowered USB hub, or small 100mA bench supply) cannot deliver the 250mA continuous and 500mA peak current demanded by the dual Xtensa cores and Wi-Fi subsystem.",
       engineeringSolution: {
-        summary: "Switch to a dedicated 5V 2A regulated power supply or high-drain LiFePO4 / Li-ion 18650 cell with BMS.",
+        summary: "Upgrade power supply to a 5V/2A regulated adapter or high-discharge Li-Ion 18650 cell.",
         steps: [
-          "Replace 9V alkaline batteries or weak USB ports with a dedicated 5V 2.0A AC-to-DC wall adapter.",
-          "If battery powered, use 18650 Li-ion batteries paired with a high-current TP4056 + protection circuit and a low-dropout regulator (e.g., HT7333 / AP2112K)."
+          "Replace the power source with a dedicated 5V 2000mA (2A) USB wall adapter.",
+          "If battery powered, use a 3.7V 18650 Li-Ion cell (with LDO) capable of >2A burst discharge.",
+          "Avoid 9V rectangular alkaline batteries (PP3) as their internal resistance causes severe voltage collapse under 100mA+ loads."
         ]
       }
     },
 
     // ==========================================
-    // FAULT TREE 2: ESP-NOW MAC PAIRING
+    // FAULT TREE 2: ESP-NOW MAC & PEERS
     // ==========================================
     "q_espnow_error_type": {
       id: "q_espnow_error_type",
+      ruleId: "RULE-ESPNOW-Q01",
       type: "question",
       category: "espnow",
-      title: "ESP-NOW API Return Code & Behavior",
-      question: "What error code or transmission behavior is observed when calling esp_now_send() or esp_now_add_peer()?",
-      description: "ESP-NOW uses raw 802.11 Action frames. Proper peer state and channel binding are required.",
+      title: "ESP-NOW Error Code & Callback Status",
+      question: "What specific error code or callback status is returned by the ESP-NOW transmission functions?",
+      description: "ESP-NOW provides deterministic error returns from esp_now_init(), esp_now_send(), and onDataSent callbacks.",
       options: [
         {
-          id: "opt_en_fail_callback",
-          label: "esp_now_send() returns ESP_OK, but Send Callback status is ESP_NOW_SEND_FAIL",
-          description: "Frame is transmitted over the air, but receiver fails to acknowledge (ACK) receipt.",
+          id: "opt_en_send_fail",
+          label: "esp_now_send() returns ESP_OK, but OnDataSent callback returns status 1 (ESP_NOW_SEND_FAIL)",
+          description: "Packet was transmitted over the air, but the receiver MAC node never acknowledged (ACK) reception.",
           nextNodeId: "q_espnow_channel_sync",
-          keywords: ["callback", "esp_now_send", "send", "fail", "ok", "acknowledge", "ack"]
+          keywords: ["callback", "status 1", "fail", "send", "esp_now_send_fail", "no ack", "ack"]
         },
         {
-          id: "opt_en_init_fail",
-          label: "esp_now_init() returns ESP_ERR_ESPNOW_NOT_INIT or ESP_ERR_ESPNOW_ARG",
-          description: "Initialization API fails immediately upon boot.",
-          nextNodeId: "q_espnow_wifi_mode",
-          keywords: ["esp_now_init", "init", "not_init", "arg", "fail", "error"]
+          id: "opt_en_not_init",
+          label: "esp_now_init() returns ESP_ERR_ESPNOW_NOT_INIT or ESP_ERR_ESPNOW_INTERNAL",
+          description: "ESP-NOW subsystem failed to initialize during setup().",
+          nextNodeId: "diag_espnow_wifi_mode_missing",
+          keywords: ["esp_now_init", "esp_err_espnow_not_init", "not init", "internal", "error"]
         },
         {
-          id: "opt_en_exist",
-          label: "esp_now_add_peer() returns ESP_ERR_ESPNOW_EXIST or peer count exceeds limit",
-          description: "Adding peer fails due to duplicate MAC or exceeding peer table capacity.",
-          nextNodeId: "diag_espnow_peer_table_overflow",
-          keywords: ["add", "peer", "exist", "limit", "exceed", "overflow"]
+          id: "opt_en_peer_exist",
+          label: "esp_now_add_peer() returns ESP_ERR_ESPNOW_EXIST or ESP_ERR_ESPNOW_FULL",
+          description: "Peer table capacity exceeded or duplicate peer registration attempted.",
+          nextNodeId: "diag_espnow_peer_capacity_exceeded",
+          keywords: ["add_peer", "exist", "full", "peer", "capacity", "table"]
         }
       ]
     },
 
     "q_espnow_channel_sync": {
       id: "q_espnow_channel_sync",
+      ruleId: "RULE-ESPNOW-Q02",
       type: "question",
       category: "espnow",
-      title: "Primary Wi-Fi Channel Synchronization",
-      question: "Are both ESP-NOW transmitter and receiver operating on the EXACT same primary Wi-Fi channel?",
-      description: "ESP-NOW cannot transmit cross-channel. Receiver on Ch 6 will never hear a packet sent on Ch 1.",
+      title: "Wi-Fi Operating Channel Alignment",
+      question: "Are both the Transmitter and Receiver ESP32 nodes locked to the exact same 2.4GHz Wi-Fi channel?",
+      description: "ESP-NOW operates on the raw 802.11 MAC layer and requires identical primary RF channel numbers (1 to 14).",
       options: [
         {
-          id: "opt_en_chan_diff",
-          label: "Transmitter and receiver channels are not explicitly fixed, or one node is connected to Wi-Fi router",
-          description: "Connecting to a Wi-Fi router forces channel to match router's dynamic channel.",
+          id: "opt_en_diff_channels",
+          label: "One node is connected to home Wi-Fi router (Channel 6), while transmitter is on default Channel 1",
+          description: "Transmitter and receiver are listening on different frequencies.",
           nextNodeId: "diag_espnow_channel_mismatch",
-          keywords: ["channel", "difference", "transmitter", "receiver", "router", "dynamic", "fix"]
+          keywords: ["channel", "router", "different", "mismatch", "ch 1", "ch 6", "frequency"]
         },
         {
-          id: "opt_en_mac_diff",
-          label: "Channels are identical, but target MAC address was obtained via WiFi.macAddress() while operating in AP mode",
-          description: "Station MAC and SoftAP MAC on ESP32 differ by 1 byte in LSB.",
+          id: "opt_en_same_channel",
+          label: "Both nodes are forced to the same channel, but MAC address was copied from STA instead of AP mode",
+          description: "Target destination MAC address does not match active interface on receiver.",
           nextNodeId: "diag_espnow_mac_interface_mismatch",
-          keywords: ["mac", "ap", "station", "sta", "macaddress", "interface"]
-        }
-      ]
-    },
-
-    "q_espnow_wifi_mode": {
-      id: "q_espnow_wifi_mode",
-      type: "question",
-      category: "espnow",
-      title: "Wi-Fi Mode & Stack State",
-      question: "Is WiFi.mode(WIFI_STA) or WiFi.mode(WIFI_AP) initialized BEFORE calling esp_now_init()?",
-      description: "The ESP32 Wi-Fi stack driver must be started before registering ESP-NOW callbacks.",
-      options: [
-        {
-          id: "opt_en_no_wifi_mode",
-          label: "esp_now_init() called without setting WiFi.mode() first",
-          description: "Wi-Fi subsystem RF hardware is uninitialized.",
-          nextNodeId: "diag_espnow_uninitialized_stack",
-          keywords: ["wifi.mode", "mode", "without", "setting", "first", "before"]
-        },
-        {
-          id: "opt_en_encryption_mismatch",
-          label: "Encryption key (LMK/PMK) mismatch or peer registered without setting encrypt=false",
-          description: "Peer struct encryption parameters mismatched between nodes.",
-          nextNodeId: "diag_espnow_encryption_mismatch",
-          keywords: ["encryption", "key", "lmk", "pmk", "mismatch", "encrypt"]
+          keywords: ["same channel", "mac", "sta", "ap", "station", "interface", "address"]
         }
       ]
     },
 
     "diag_espnow_channel_mismatch": {
       id: "diag_espnow_channel_mismatch",
+      ruleId: "RULE-ESPNOW-01",
       type: "diagnosis",
       category: "espnow",
-      title: "Wi-Fi Primary Channel Asynchrony",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (CallbackStatus == ESP_NOW_SEND_FAIL) ∧ (Channel_TX != Channel_RX) THEN HYPOTHESIS('Wi-Fi Primary RF Channel Asynchrony', CF=0.99)",
+      antecedents: [
+        "Transmitter ESP32 operates on default Wi-Fi Channel 1",
+        "Receiver ESP32 connects to an AP router which dynamically assigns Channel 6 or 11",
+        "Receiver radio hardware cannot demodulate frames transmitted on a different 2.4GHz center frequency"
+      ],
+      title: "Wi-Fi Primary RF Channel Asynchrony",
       severity: "CRITICAL",
-      symptomSummary: "esp_now_send() returns status ESP_NOW_SEND_FAIL in the send callback despite peer MAC being added.",
-      diagnosis: "Transmitter and Receiver Wi-Fi Channel Mismatch.",
-      rootCause: "ESP-NOW action frames are transmitted on the primary channel of the sender's radio. If Node A is on Channel 1 and Node B is on Channel 6 (or dynamically changed by connecting to a Wi-Fi router), Node B's receiver hardware is tuned to another frequency and misses all raw frames.",
+      symptomSummary: "esp_now_send() executes successfully, but OnDataSent callback always returns status = 1 (Delivery Failed).",
+      diagnosis: "Wi-Fi Channel Mismatch between ESP-NOW Transmitter and Receiver.",
+      rootCause: "ESP-NOW transmits raw 802.11 Vendor-Specific Action Frames. If Node A transmits on 2.412 GHz (Channel 1) and Node B is listening on 2.437 GHz (Channel 6), Node B's RF front-end physically filters out the transmission, resulting in missing MAC-layer 802.11 ACK frames.",
       engineeringSolution: {
-        summary: "Explicitly set matching Wi-Fi channel on both nodes prior to ESP-NOW operation.",
+        summary: "Explicitly set identical Wi-Fi channels on both nodes using esp_wifi_set_channel() before initializing ESP-NOW.",
         steps: [
-          "Call WiFi.mode(WIFI_STA) and esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE) on both nodes.",
-          "If one node must connect to a Wi-Fi router, set the router's 2.4GHz channel to a fixed channel (e.g. Ch 6) and force the ESP-NOW peer to Ch 6."
+          "Call WiFi.mode(WIFI_STA) on both nodes.",
+          "Call esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE) on BOTH nodes to force them onto Channel 1.",
+          "Ensure peerInfo.channel = 1 in the esp_now_peer_info_t struct.",
+          "If the receiver must connect to a home Wi-Fi router, retrieve the router channel using WiFi.channel() and set the transmitter to that exact channel."
         ],
-        codeSnippet: "#include <esp_now.h>\n#include <WiFi.h>\n#include <esp_wifi.h>\n\n#define PRIMARY_CHANNEL 6\n\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  // Force primary Wi-Fi channel\n  esp_wifi_set_channel(PRIMARY_CHANNEL, WIFI_SECOND_CHAN_NONE);\n  \n  if (esp_now_init() != ESP_OK) {\n    Serial.println(\"Error initializing ESP-NOW\");\n    return;\n  }\n}"
+        codeSnippet: "#include <esp_now.h>\n#include <WiFi.h>\n#include <esp_wifi.h>\n\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  // Force primary channel sync before ESP-NOW init:\n  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);\n  if (esp_now_init() != ESP_OK) {\n    Serial.println(\"ESP-NOW Init Failed\");\n  }\n}"
       }
     },
 
     "diag_espnow_mac_interface_mismatch": {
       id: "diag_espnow_mac_interface_mismatch",
+      ruleId: "RULE-ESPNOW-02",
       type: "diagnosis",
       category: "espnow",
-      title: "Station vs SoftAP MAC Address Discrepancy",
-      severity: "WARNING",
-      symptomSummary: "ESP-NOW delivery fails reliably; peer MAC address double-checked but packet rejected.",
-      diagnosis: "Hardcoded Station MAC address used while Receiver Node operates on SoftAP interface.",
-      rootCause: "The ESP32 has separate MAC addresses for Station (STA) and SoftAP (AP) interfaces (typically STA MAC + 1 at the last octet). If receiver is configured in WIFI_AP mode, packets addressed to its STA MAC are dropped by MAC layer filtering.",
-      engineeringSolution: {
-        summary: "Ensure destination MAC corresponds to the active interface mode of receiver.",
-        steps: [
-          "Print receiver's MAC using WiFi.macAddress() for STA mode or WiFi.softAPmacAddress() for AP mode.",
-          "Use the exact 6-byte array matching receiver's active mode in peer.peer_addr."
-        ],
-        codeSnippet: "// Print both MAC addresses on Receiver to verify target MAC:\nSerial.print(\"STA MAC: \"); Serial.println(WiFi.macAddress());\nSerial.print(\"AP MAC:  \"); Serial.println(WiFi.softAPmacAddress());"
-      }
-    },
-
-    "diag_espnow_peer_table_overflow": {
-      id: "diag_espnow_peer_table_overflow",
-      type: "diagnosis",
-      category: "espnow",
-      title: "ESP-NOW Peer Table Memory Capacity Exceeded",
-      severity: "WARNING",
-      symptomSummary: "esp_now_add_peer() fails with ESP_ERR_ESPNOW_EXIST or ESP_ERR_ESPNOW_FULL.",
-      diagnosis: "Maximum Peer Count Limit Exceeded (20 unencrypted / 6 encrypted peers max).",
-      rootCause: "The ESP-NOW driver maintains an internal peer table allocated in RAM. ESP32 supports a maximum of 20 total registered peers in unencrypted mode or 6 in encrypted mode.",
-      engineeringSolution: {
-        summary: "Use Broadcast address (FF:FF:FF:FF:FF:FF) or dynamically manage peer registration.",
-        steps: [
-          "For one-to-many sensor broadcasting, register a single broadcast peer MAC {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}.",
-          "If communicating with >20 nodes, dynamically remove idle peers using esp_now_del_peer(mac) before adding a new peer."
-        ],
-        codeSnippet: "// Broadcast peer setup snippet:\nesp_now_peer_info_t peerInfo = {};\nmemset(peerInfo.peer_addr, 0xFF, 6); // Broadcast MAC\npeerInfo.channel = 0; // Current channel\npeerInfo.encrypt = false;\n\nif (!esp_now_is_peer_exist(peerInfo.peer_addr)) {\n  esp_now_add_peer(&peerInfo);\n}"
-      }
-    },
-
-    "diag_espnow_uninitialized_stack": {
-      id: "diag_espnow_uninitialized_stack",
-      type: "diagnosis",
-      category: "espnow",
-      title: "Wi-Fi Driver Subsystem Uninitialized",
+      confidenceFactor: 0.96,
+      formalRuleStatement: "IF (PeerMAC == Receiver_STA_MAC) ∧ (Receiver_Active_Mode == WIFI_AP) THEN HYPOTHESIS('Station vs Access Point MAC Address Mismatch', CF=0.96)",
+      antecedents: [
+        "ESP32 hardware has two distinct MAC addresses: STA MAC (base MAC) and AP MAC (base MAC + 1)",
+        "Transmitter registered peer using STA MAC address",
+        "Receiver was initialized in WIFI_AP mode, causing hardware MAC filter to reject frame"
+      ],
+      title: "Station (STA) vs Access Point (AP) MAC Address Mismatch",
       severity: "CRITICAL",
-      symptomSummary: "esp_now_init() returns ESP_ERR_ESPNOW_NOT_INIT.",
-      diagnosis: "ESP32 Wi-Fi stack driver not started before ESP-NOW invocation.",
-      rootCause: "Calling esp_now_init() requires the underlying low-level Wi-Fi driver to be active and allocated in RAM.",
+      symptomSummary: "ESP-NOW delivery fails with status 1 even when both nodes are verified on Channel 1.",
+      diagnosis: "Target MAC Address Belongs to Inactive Wi-Fi Interface.",
+      rootCause: "An ESP32 has distinct MAC addresses for its Station (STA) and SoftAP (AP) interfaces (usually differing by the last byte by +1). If the transmitter sends packets to the receiver's STA MAC while the receiver is listening on its AP interface, the hardware MAC filter drops the packet.",
       engineeringSolution: {
-        summary: "Set Wi-Fi mode explicitly prior to initializing ESP-NOW.",
+        summary: "Print WiFi.macAddress() on the receiver in the exact mode used (STA vs AP) and register that exact 6-byte array.",
         steps: [
-          "Call WiFi.mode(WIFI_STA) or WiFi.mode(WIFI_AP_STA) before calling esp_now_init().",
-          "Verify esp_now_init() return code equals ESP_OK before registering send/receive callbacks."
-        ]
+          "On the receiver, run: Serial.println(WiFi.macAddress()) immediately after calling WiFi.mode().",
+          "If using WiFi.mode(WIFI_AP_STA), check whether your ESP-NOW peer is listening on WiFi.softAPmacAddress().",
+          "Update the broadcast or peer array on the transmitter node with the exact verified bytes."
+        ],
+        codeSnippet: "// Verify active MAC on Receiver:\nvoid setup() {\n  Serial.begin(115200);\n  WiFi.mode(WIFI_STA);\n  Serial.print(\"Active STA MAC Address: \");\n  Serial.println(WiFi.macAddress());\n}"
       }
     },
 
-    "diag_espnow_encryption_mismatch": {
-      id: "diag_espnow_encryption_mismatch",
+    "diag_espnow_wifi_mode_missing": {
+      id: "diag_espnow_wifi_mode_missing",
+      ruleId: "RULE-ESPNOW-03",
       type: "diagnosis",
       category: "espnow",
-      title: "Local Master Key (LMK) / Primary Master Key (PMK) Mismatch",
-      severity: "WARNING",
-      symptomSummary: "Packets delivered encrypted but receiver callback never triggers.",
-      diagnosis: "ESP-NOW Peer Encryption Key Configuration Mismatch.",
-      rootCause: "When encrypt = true is set in esp_now_peer_info_t, both nodes must have identical PMK (Primary Master Key) and LMK (Local Master Key) set via esp_now_set_pmk() and peerInfo.lmk.",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (esp_now_init() == ESP_ERR_ESPNOW_NOT_INIT) ∧ (WiFi_Mode_Initialized == FALSE) THEN HYPOTHESIS('Missing WiFi.mode() Initialization Call', CF=0.99)",
+      antecedents: [
+        "esp_now_init() was called without prior WiFi.mode(WIFI_STA) execution",
+        "Underlying ESP-IDF 802.11 driver stack was uninitialized"
+      ],
+      title: "Missing WiFi.mode(WIFI_STA) Initialization Call",
+      severity: "CRITICAL",
+      symptomSummary: "esp_now_init() crashes or returns ESP_ERR_ESPNOW_NOT_INIT immediately in setup().",
+      diagnosis: "Wi-Fi Driver Stack Uninitialized Prior to ESP-NOW Invocation.",
+      rootCause: "ESP-NOW is a protocol layer built directly on top of the ESP32 Wi-Fi PHY/MAC driver. Calling esp_now_init() before calling WiFi.mode(WIFI_STA) or esp_wifi_init() causes the function to fail because the underlying radio driver state machine is disabled.",
       engineeringSolution: {
-        summary: "Set matching 16-byte LMK and PMK keys or set encrypt = false for plain transmission.",
+        summary: "Call WiFi.mode(WIFI_STA) before esp_now_init() in setup().",
         steps: [
-          "Ensure peerInfo.encrypt = false if encryption is not required.",
-          "If encryption is required, configure matching 16-byte PMK using esp_now_set_pmk((uint8_t*)\"PMK1234567890123\") on both devices."
-        ]
+          "Add WiFi.mode(WIFI_STA) as the very first line of networking setup.",
+          "Verify return value: if (esp_now_init() != ESP_OK) { Serial.println('Init Failed'); return; }",
+          "Ensure WiFi.disconnect() is not called afterwards as it de-initializes the Wi-Fi radio stack."
+        ],
+        codeSnippet: "void setup() {\n  Serial.begin(115200);\n  // MANDATORY: Must initialize Wi-Fi mode before ESP-NOW\n  WiFi.mode(WIFI_STA);\n  if (esp_now_init() == ESP_OK) {\n    Serial.println(\"ESP-NOW Initialized Successfully\");\n  }\n}"
+      }
+    },
+
+    "diag_espnow_peer_capacity_exceeded": {
+      id: "diag_espnow_peer_capacity_exceeded",
+      ruleId: "RULE-ESPNOW-04",
+      type: "diagnosis",
+      category: "espnow",
+      confidenceFactor: 0.97,
+      formalRuleStatement: "IF (RegisteredPeersCount > 20) ∨ (esp_now_add_peer() == ESP_ERR_ESPNOW_FULL) THEN HYPOTHESIS('ESP-NOW Hardware Peer Table Overflow (Max 20)', CF=0.97)",
+      antecedents: [
+        "ESP32 hardware peer table reached maximum limit (20 total peers, max 6 encrypted)",
+        "esp_now_add_peer() returned ESP_ERR_ESPNOW_FULL"
+      ],
+      title: "ESP-NOW Hardware Peer Table Overflow (Max 20 Peers)",
+      severity: "WARNING",
+      symptomSummary: "esp_now_add_peer() fails when pairing node #21 or node #7 in encrypted mode.",
+      diagnosis: "ESP-NOW Hardware Internal Peer Table Exceeded.",
+      rootCause: "The ESP32 ESP-NOW firmware implementation allocates a fixed internal peer storage table with a hard limit of 20 paired nodes (and a maximum of 6 encrypted peers). Attempting to add additional peers causes memory allocation failure.",
+      engineeringSolution: {
+        summary: "Use broadcast address (FF:FF:FF:FF:FF:FF) or dynamically delete inactive peers using esp_now_del_peer().",
+        steps: [
+          "For mesh or star topologies with >20 nodes, register a single Broadcast Peer with MAC FF:FF:FF:FF:FF:FF.",
+          "Include target node ID inside the packet payload and filter in application firmware.",
+          "If unicast is required, call esp_now_del_peer() on inactive nodes before calling esp_now_add_peer() for new nodes."
+        ],
+        codeSnippet: "// Broadcast peer registration for >20 nodes:\nuint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};\nesp_now_peer_info_t peerInfo = {};\nmemcpy(peerInfo.peer_addr, broadcastAddress, 6);\npeerInfo.channel = 0;\npeerInfo.encrypt = false;\nesp_now_add_peer(&peerInfo);"
       }
     },
 
     // ==========================================
-    // FAULT TREE 3: WI-FI CONNECTION TIMEOUTS
+    // FAULT TREE 3: WI-FI & FREERTOS WATCHDOG
     // ==========================================
     "q_wifi_symptom": {
       id: "q_wifi_symptom",
+      ruleId: "RULE-WIFI-Q01",
       type: "question",
       category: "wifi",
-      title: "Wi-Fi Connection Hang Symptom",
-      question: "What occurs when the ESP32 attempts to connect to your Wi-Fi access point?",
-      description: "Differentiating between authentication rejects, blocking code loops, and router channel issues.",
+      title: "Wi-Fi Connection Failure Manifestation",
+      question: "How does the Wi-Fi connection fail, and what appears on the Serial Monitor?",
+      description: "Distinguish between Task Watchdog resets, infinite connection loops, and DHCP timeout failures.",
       options: [
         {
-          id: "opt_wf_wdt_reset",
-          label: "Serial monitor shows 'Task watchdog got triggered' or 'TG1WDT_SYS_RESET'",
-          description: "Device reboots while executing while(WiFi.status() != WL_CONNECTED).",
-          nextNodeId: "diag_wifi_blocking_loop_wdt",
-          keywords: ["watchdog", "wdt", "triggered", "reset", "tg1wdt_sys_reset", "serial", "monitor"]
+          id: "opt_wifi_wdt_panic",
+          label: "Serial Monitor prints 'Task watchdog got triggered' or 'Guru Meditation Error' inside while(WiFi.status() != WL_CONNECTED)",
+          description: "FreeRTOS Task Watchdog Timer (TWDT) resets Core 1 after ~5 seconds of blocking loop.",
+          nextNodeId: "diag_wifi_blocking_loop_twdt",
+          keywords: ["watchdog", "twdt", "guru", "meditation", "panic", "loop", "wl_connected", "blocking"]
         },
         {
-          id: "opt_wf_dual_band",
-          label: "Connection times out endlessly; router uses unified single SSID for 2.4GHz & 5GHz",
-          description: "Dual-band mesh routers attempting band steering.",
+          id: "opt_wifi_5ghz_steering",
+          label: "ESP32 connects intermittently or hangs forever on modern dual-band mesh Wi-Fi router",
+          description: "Dual-band 2.4GHz / 5GHz router attempts band steering toward unsupported 5GHz radio.",
           nextNodeId: "diag_wifi_5ghz_band_steering",
-          keywords: ["ssid", "router", "single", "dual", "band", "steering", "mesh", "2.4ghz", "5ghz"]
+          keywords: ["5ghz", "band", "steering", "mesh", "dual-band", "router", "hang", "intermittent"]
         },
         {
-          id: "opt_wf_dhcp_fail",
-          label: "WiFi.status() remains WL_DISCONNECTED or WL_NO_SSID_AVAIL despite correct credentials",
-          description: "DHCP server lease exhaustion or dynamic channel switching (DFS).",
-          nextNodeId: "q_wifi_security_type",
-          keywords: ["wl_disconnected", "wl_no_ssid_avail", "credentials", "status", "disconnection"]
+          id: "opt_wifi_dhcp_timeout",
+          label: "WiFi.status() returns WL_NO_SSID_AVAIL or WL_CONNECT_FAILED after 30 seconds",
+          description: "Access Point signal not found or DHCP server fails to assign local IP address.",
+          nextNodeId: "diag_wifi_dhcp_exhaustion",
+          keywords: ["wl_no_ssid_avail", "wl_connect_failed", "dhcp", "ip", "timeout", "exhaustion"]
         }
       ]
     },
 
-    "q_wifi_security_type": {
-      id: "q_wifi_security_type",
-      type: "question",
-      category: "wifi",
-      title: "Access Point Security & IP Configuration",
-      question: "What security protocol does the Wi-Fi router use, and is DHCP enabled?",
-      description: "ESP32 non-H2/C6 variants do NOT support 5GHz or WPA3 Enterprise / PMF required mode.",
-      options: [
-        {
-          id: "opt_wf_wpa3",
-          label: "Router is set to WPA3-Only mode or Enterprise (802.1X)",
-          description: "Legacy ESP32 base chip supports WPA2-Personal (AES/TKIP).",
-          nextNodeId: "diag_wifi_wpa3_incompatibility",
-          keywords: ["wpa3", "enterprise", "802.1x", "security", "protocol"]
-        },
-        {
-          id: "opt_wf_static_ip",
-          label: "Standard WPA2-PSK router, but DHCP takes over 15 seconds to respond",
-          description: "DHCP DISCOVER timeout or IP address pool exhaustion.",
-          nextNodeId: "diag_wifi_dhcp_timeout_static_ip",
-          keywords: ["wpa2", "wpa2-psk", "dhcp", "respond", "seconds", "15"]
-        }
-      ]
-    },
-
-    "diag_wifi_blocking_loop_wdt": {
-      id: "diag_wifi_blocking_loop_wdt",
+    "diag_wifi_blocking_loop_twdt": {
+      id: "diag_wifi_blocking_loop_twdt",
+      ruleId: "RULE-WIFI-01",
       type: "diagnosis",
       category: "wifi",
-      title: "Synchronous Blocking Loop Starving FreeRTOS Task Watchdog",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (LoopPattern == 'while(WiFi.status() != WL_CONNECTED)') ∧ (YieldCall == NONE) ∧ (Runtime > 5000ms) THEN HYPOTHESIS('FreeRTOS Task Watchdog Starvation on Core 1', CF=0.99)",
+      antecedents: [
+        "Tight synchronous while() loop executed without delay() or yield()",
+        "FreeRTOS IDLE task on Core 1 starved of execution time",
+        "Task Watchdog Timer (TWDT) threshold (default 5000ms) exceeded, triggering hard core reset"
+      ],
+      title: "Synchronous Blocking Loop Starving FreeRTOS Task Watchdog (TWDT)",
       severity: "CRITICAL",
-      symptomSummary: "ESP32 crashes and prints 'Task watchdog got triggered' (TWDT) during Wi-Fi connection loop.",
-      diagnosis: "FreeRTOS IDLE Task Starvation in Synchronous while() Connection Loop.",
-      rootCause: "Writing while(WiFi.status() != WL_CONNECTED) {} without a delay() or yield() traps Core 1 in a tight loop. This prevents the FreeRTOS IDLE task from running and feeding the Task Watchdog Timer (TWDT), triggering a watchdog reset after 5 seconds.",
+      symptomSummary: "ESP32 crashes and prints 'Task watchdog got triggered. The following tasks did not reset the watchdog in time: IDLE0 or loopTask' followed by a register dump.",
+      diagnosis: "Synchronous Blocking Loop Starving FreeRTOS Task Watchdog on CPU Core 1.",
+      rootCause: "In the Arduino-ESP32 framework, loop() runs inside a FreeRTOS task on Core 1. Writing while (WiFi.status() != WL_CONNECTED) {} without delay() starves the FreeRTOS IDLE task from executing. After 5 seconds, the Task Watchdog Timer (TWDT) triggers a hard core reset.",
       engineeringSolution: {
-        summary: "Add non-blocking delay/yield or implement asynchronous Wi-Fi event handling.",
+        summary: "Insert delay(10) or vTaskDelay(1) inside connection loops, or use non-blocking asynchronous Wi-Fi event callbacks.",
         steps: [
-          "Add delay(100) or vTaskDelay(pdMS_TO_TICKS(100)) inside connection polling loops to yield CPU control.",
-          "Implement async connection events using WiFi.onEvent() for robust production firmware."
+          "Add delay(10) inside the while loop to allow the FreeRTOS scheduler to feed the Task Watchdog.",
+          "Implement a timeout counter to break out of the loop after 10-15 seconds if the router is offline.",
+          "Better: Register event handlers using WiFi.onEvent() for fully asynchronous, non-blocking connection management."
         ],
-        codeSnippet: "// Correct non-blocking Wi-Fi connection loop:\nint timeout = 0;\nWiFi.begin(ssid, password);\nwhile (WiFi.status() != WL_CONNECTED && timeout < 30) {\n  delay(500); // YIELDS CPU to prevent Task Watchdog reset\n  Serial.print(\".\");\n  timeout++;\n}\nif (WiFi.status() != WL_CONNECTED) {\n  Serial.println(\"\\nConnection failed! Proceeding to fallback...\");\n}"
+        codeSnippet: "// Proper Non-Blocking Wi-Fi Connection Loop with Watchdog Yield:\nunsigned long startAttemptTime = millis();\nwhile (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000) {\n  delay(100); // YIELDS CPU TO FREERTOS IDLE TASK\n  Serial.print(\".\");\n}\nif (WiFi.status() != WL_CONNECTED) {\n  Serial.println(\"\\nConnection Timeout! Retrying later...\");\n}"
       }
     },
 
     "diag_wifi_5ghz_band_steering": {
       id: "diag_wifi_5ghz_band_steering",
+      ruleId: "RULE-WIFI-02",
       type: "diagnosis",
       category: "wifi",
-      title: "5GHz Band Steering Rejection by Dual-Band Routers",
+      confidenceFactor: 0.96,
+      formalRuleStatement: "IF (Router_Type == 'DualBand_Unified_SSID') ∧ (ESP32_Radio == '2.4GHz_Only') ∧ (Handshake_Fails == TRUE) THEN HYPOTHESIS('Router 5GHz Band-Steering Probe Rejection', CF=0.96)",
+      antecedents: [
+        "Router broadcasts single unified SSID across both 2.4GHz and 5GHz bands",
+        "Router 802.11k/v/r band steering engine attempts to steer ESP32 probe requests to 5GHz",
+        "ESP32 hardware radio only supports 2.4GHz (802.11 b/g/n), causing association refusal"
+      ],
+      title: "Router 5GHz Band-Steering Probe Rejection",
       severity: "WARNING",
-      symptomSummary: "ESP32 fails to connect to home Wi-Fi network; phone and laptop connect without issue.",
-      diagnosis: "Incompatibility with 5GHz Wi-Fi / Router Band Steering.",
-      rootCause: "Standard ESP32 (ESP32-D0WD, ESP32-S3, ESP32-C3) contain only a 2.4GHz IEEE 802.11b/g/n physical layer (PHY). Modern dual-band routers with 'Smart Connect' / Band Steering attempt to negotiate 5GHz connections, rejecting ESP32 2.4GHz auth frames.",
+      symptomSummary: "ESP32 connects to mobile hotspot instantly, but fails to connect to home mesh router sharing a single SSID for 2.4GHz and 5GHz.",
+      diagnosis: "Router Band-Steering Feature Blocking 2.4GHz-Only ESP32 PHY Association.",
+      rootCause: "Modern Wi-Fi 6 / mesh routers use 'Band Steering' to force dual-band clients onto 5GHz by ignoring initial probe requests on 2.4GHz. Because the standard ESP32 is 2.4GHz-only, the router's band steering logic continuously delays or denies association frames.",
       engineeringSolution: {
-        summary: "Separate 2.4GHz SSID or create a dedicated 2.4GHz IoT Guest Network.",
+        summary: "Split 2.4GHz and 5GHz SSIDs on router settings or create a dedicated 2.4GHz IoT Guest Network.",
         steps: [
-          "Log into router settings and disable 'Smart Connect' / Band Steering.",
-          "Create a dedicated 2.4GHz SSID (e.g. 'MyNetwork_2.4G') with WPA2-PSK (AES) security.",
-          "Ensure router 2.4GHz channel width is set to 20MHz (not 40MHz)."
+          "Log into router management console (e.g. 192.168.1.1).",
+          "Disable 'Band Steering' / 'Smart Connect' or separate SSIDs into 'Home_2.4G' and 'Home_5G'.",
+          "Enable a dedicated 'IoT Network' locked to 2.4GHz with WPA2-PSK (AES) security.",
+          "Ensure router Wi-Fi security is not set to WPA3-Only mode (ESP32 standard firmware requires WPA2-PSK)."
         ]
       }
     },
 
-    "diag_wifi_wpa3_incompatibility": {
-      id: "diag_wifi_wpa3_incompatibility",
+    "diag_wifi_dhcp_exhaustion": {
+      id: "diag_wifi_dhcp_exhaustion",
+      ruleId: "RULE-WIFI-03",
       type: "diagnosis",
       category: "wifi",
-      title: "WPA3 SAE / PMF (Protected Management Frames) Mode Incompatibility",
-      severity: "CRITICAL",
-      symptomSummary: "ESP32 fails authentication immediately; return status WL_CONNECT_FAILED.",
-      diagnosis: "WPA3 Security Mode / PMF Mandatory Rejection.",
-      rootCause: "Original ESP32 SDK firmware does not support WPA3-SAE mandatory mode. Routers set strictly to WPA3-Personal reject ESP32 association requests during 4-way handshake.",
-      engineeringSolution: {
-        summary: "Reconfigure router security mode to WPA2/WPA3 Mixed Mode (WPA2-PSK Fallback).",
-        steps: [
-          "Change Wi-Fi AP security setting from 'WPA3-Only' to 'WPA2/WPA3 Personal Mixed'.",
-          "Set Protected Management Frames (PMF) setting to 'Optional' / 'Capable' rather than 'Required'."
-        ]
-      }
-    },
-
-    "diag_wifi_dhcp_timeout_static_ip": {
-      id: "diag_wifi_dhcp_timeout_static_ip",
-      type: "diagnosis",
-      category: "wifi",
-      title: "DHCP IP Lease Timeout & Network Pool Exhaustion",
+      confidenceFactor: 0.92,
+      formalRuleStatement: "IF (WiFi.status() == WL_CONNECT_FAILED) ∧ (IP_Assigned == FALSE) THEN HYPOTHESIS('DHCP IP Pool Exhaustion / Static IP Misconfiguration', CF=0.92)",
+      antecedents: [
+        "ESP32 successfully authenticates with Wi-Fi Access Point (WPA2 4-Way Handshake OK)",
+        "Router DHCP server pool is exhausted or fails to offer IP lease within timeout"
+      ],
+      title: "DHCP Pool Exhaustion / Router IP Lease Failure",
       severity: "WARNING",
-      symptomSummary: "ESP32 connects to AP (AUTH SUCCESS), but hangs indefinitely waiting for IP address.",
-      diagnosis: "DHCP DISCOVER Response Timeout.",
-      rootCause: "Router DHCP server fails to assign IP lease within 15 seconds due to IP pool exhaustion or aggressive router sleep/multicast filtering.",
+      symptomSummary: "ESP32 connects to Wi-Fi network, but hangs indefinitely awaiting an IP address and prints IP: 0.0.0.0.",
+      diagnosis: "DHCP Server Pool Exhaustion or Static IP Gateway Conflict.",
+      rootCause: "The router's DHCP lease pool has run out of available addresses, or the DHCP request packet was lost due to network congestion, leaving the ESP32 stuck in the DHCP DISCOVER state.",
       engineeringSolution: {
-        summary: "Assign static IP configuration on ESP32 outside router DHCP range.",
+        summary: "Assign a manual static IP address using WiFi.config() to bypass DHCP negotiation entirely.",
         steps: [
-          "Configure static IP using WiFi.config(local_IP, gateway, subnet, primaryDNS).",
-          "Ensure assigned static IP is outside router's dynamic DHCP pool range to prevent IP collisions."
+          "Define static IP, gateway, subnet mask, and DNS addresses outside the router's dynamic DHCP range.",
+          "Call WiFi.config(local_IP, gateway, subnet, primaryDNS) before WiFi.begin().",
+          "Reboot the router to clear stale DHCP leases."
         ],
-        codeSnippet: "IPAddress local_IP(192, 168, 1, 200);\nIPAddress gateway(192, 168, 1, 1);\nIPAddress subnet(255, 255, 255, 0);\nIPAddress primaryDNS(8, 8, 8, 8);\n\nvoid setup() {\n  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS)) {\n    Serial.println(\"STA Failed to configure Static IP\");\n  }\n  WiFi.begin(ssid, password);\n}"
+        codeSnippet: "// Configure Static IP to bypass DHCP delays:\nIPAddress local_IP(192, 168, 1, 185);\nIPAddress gateway(192, 168, 1, 1);\nIPAddress subnet(255, 255, 255, 0);\nIPAddress primaryDNS(8, 8, 8, 8);\n\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  WiFi.config(local_IP, gateway, subnet, primaryDNS);\n  WiFi.begin(\"SSID\", \"PASS\");\n}"
       }
     },
 
     // ==========================================
-    // FAULT TREE 4: GPIO VOLTAGE MISMATCHES
+    // FAULT TREE 4: GPIO VOLTAGE & LOGIC
     // ==========================================
     "q_gpio_voltage_level": {
       id: "q_gpio_voltage_level",
+      ruleId: "RULE-GPIO-Q01",
       type: "question",
       category: "gpio",
-      title: "GPIO Interfacing & External Sensor Power Rail",
-      question: "What signal voltage is being fed directly into the ESP32 GPIO input pin?",
-      description: "ESP32 GPIO pins use 3.3V LVCMOS logic and are NOT 5V tolerant.",
+      title: "External Sensor / Actuator Signal Voltage",
+      question: "What logic voltage level is output by the external sensor, display, or relay module connected to the ESP32 GPIO pin?",
+      description: "ESP32 GPIO pins operate at 3.3V LVCMOS logic levels with an absolute maximum rating of 3.6V.",
       options: [
         {
           id: "opt_gpio_5v_direct",
-          label: "5V signal directly connected from 5V sensor (e.g. HC-SR04, 5V Arduino, 5V Relay)",
-          description: "Signal line exceeds VDD + 0.3V (3.6V max absolute limit).",
-          nextNodeId: "q_gpio_physical_symptom",
-          keywords: ["5v", "direct", "sensor", "hc-sr04", "arduino", "relay", "signal"]
+          label: "Connected directly to a 5V sensor (e.g. 5V Arduino, Ultrasonic HC-SR04, or 5V Relay module)",
+          description: "5V logic high applied directly to ESP32 input pin without level shifting.",
+          nextNodeId: "diag_gpio_overvoltage_latchup",
+          keywords: ["5v", "hc-sr04", "relay", "direct", "arduino", "ultrasonic", "overvoltage"]
         },
         {
-          id: "opt_gpio_inductive_relay",
-          label: "Relay coil connected directly to GPIO pin without transistor or flyback diode",
-          description: "Driving inductive loads directly from micro-controller pin.",
-          nextNodeId: "diag_gpio_inductive_kickback",
-          keywords: ["relay", "coil", "transistor", "flyback", "diode", "inductive", "load"]
+          id: "opt_gpio_inductive_spike",
+          label: "Connected to a DC motor, solenoid, or inductive relay coil with NO flyback diode",
+          description: "High-voltage inductive back-EMF spike (>50V) generated upon switch-off.",
+          nextNodeId: "diag_gpio_inductive_back_emf",
+          keywords: ["motor", "solenoid", "relay", "coil", "flyback", "diode", "inductive", "back-emf"]
         },
         {
-          id: "opt_gpio_floating",
-          label: "Button switch or sensor output reads random fluctuating values (0 and 1)",
-          description: "Input pin left in high-impedance floating state.",
-          nextNodeId: "diag_gpio_floating_input",
-          keywords: ["floating", "button", "switch", "fluctuate", "random", "high-impedance"]
+          id: "opt_gpio_floating_pin",
+          label: "Pushbutton or digital sensor connected with NO external or internal pull-up/pull-down resistor",
+          description: "High-impedance floating pin picking up electrostatic noise.",
+          nextNodeId: "diag_gpio_floating_input_noise",
+          keywords: ["floating", "pull-up", "pull-down", "pushbutton", "button", "noise", "input_pullup"]
         }
       ]
     },
 
-    "q_gpio_physical_symptom": {
-      id: "q_gpio_physical_symptom",
-      type: "question",
-      category: "gpio",
-      title: "Physical State & Multimeter Diagnostics",
-      question: "What is the physical condition of the ESP32 chip or the specific GPIO pin?",
-      description: "Over-voltage induces gate-oxide breakdown or internal ESD substrate diode shorting.",
-      options: [
-        {
-          id: "opt_gpio_hot_shorted",
-          label: "ESP32 main chip is hot to touch, or pin measures shorted (0 ohms) to GND",
-          description: "Internal ESD clamping diode latched up and melted internal silicon bond wire.",
-          nextNodeId: "diag_gpio_hardware_destruction",
-          keywords: ["hot", "shorted", "gnd", "0", "ohms", "measure", "touch"]
-        },
-        {
-          id: "opt_gpio_no_read",
-          label: "ESP32 works normally, but pin always reads 1 (HIGH) or fails digitalRead()",
-          description: "Internal input buffer gate damaged due to 5V overvoltage exposure.",
-          nextNodeId: "diag_gpio_level_shifter_required",
-          keywords: ["normal", "1", "high", "digitalread", "fail", "read"]
-        }
-      ]
-    },
-
-    "diag_gpio_hardware_destruction": {
-      id: "diag_gpio_hardware_destruction",
+    "diag_gpio_overvoltage_latchup": {
+      id: "diag_gpio_overvoltage_latchup",
+      ruleId: "RULE-GPIO-01",
       type: "diagnosis",
       category: "gpio",
-      title: "GPIO Overvoltage Substrate Latch-up & Permanent Chip Destruction",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (GPIO_Input_Voltage >= 5.0V) ∧ (LevelShifter == NONE) THEN HYPOTHESIS('GPIO CMOS Gate Oxide Breakdown & Substrate Latch-up', CF=0.99)",
+      antecedents: [
+        "5.0V TTL logic level applied directly to 3.3V LVCMOS ESP32 GPIO pin",
+        "Input voltage exceeds 3.6V absolute maximum rating in ESP32 datasheet",
+        "Internal ESD clamping diodes forward-biased, dumping excess current into VDD rail and triggering substrate latch-up"
+      ],
+      title: "GPIO 5V Overvoltage Substrate Latch-up & Gate Destruction",
       severity: "CRITICAL",
-      symptomSummary: "ESP32 main IC becomes scorching hot; board fails to boot or draw excess 300mA idle current.",
-      diagnosis: "Permanent Silicon Gate-Oxide Breakdown & Substrate Diode Latch-Up.",
-      rootCause: "Connecting a 5V signal (e.g. 5V UART, 5V HC-SR04 Echo) directly into an ESP32 GPIO pin forces current through the internal ESD protection diode to VDD. When current exceeds diode ratings, it triggers a parasitic SCR latch-up between VDD and GND, short-circuiting the internal power rail and burning silicon substrate.",
+      symptomSummary: "ESP32 becomes very hot; GPIO pin reads permanently HIGH or LOW; microcontroller fails to respond on serial monitor.",
+      diagnosis: "CMOS Gate Oxide Breakdown & Substrate Latch-up from 5V Signal Injection.",
+      rootCause: "ESP32 pins are NOT 5V tolerant. Applying 5V directly to a 3.3V LVCMOS pin causes the internal upper ESD protection diode to conduct continuously into the 3.3V rail. This causes catastrophic substrate latch-up, destroying the GPIO multiplexer and creating a permanent internal silicon short circuit.",
       engineeringSolution: {
-        summary: "Replace fried ESP32 board and install hardware level shifting on all 5V inputs.",
+        summary: "Replace destroyed ESP32 module and install bidirectional logic level shifters (BSS138/TXS0108E) or resistive voltage dividers.",
         steps: [
-          "Discard damaged ESP32 module (internal short-circuit cannot be repaired).",
-          "Install a Bidirectional Logic Level Converter (e.g. BSS138 N-channel MOSFET shifter) on all 5V signal lines.",
-          "Alternatively, use a resistor voltage divider ($R_1 = 1.8k\\Omega, R_2 = 3.3k\\Omega$) to drop $5\\text{V} \\rightarrow 3.23\\text{V}$."
+          "Disconnect the 5V sensor immediately (the damaged pin cannot be repaired in firmware).",
+          "Use a 2-channel bidirectional logic level shifter (e.g. BSS138 MOSFET or TXS0108E) to step 5V signals down to 3.3V.",
+          "For simple unidirectional signals, use a resistive voltage divider: 1kΩ in series and 2kΩ to GND (Vout = 5V * (2k / (1k + 2k)) = 3.33V)."
         ],
-        circuitDiagramNote: "Resistor Voltage Divider Formula: Vout = Vin * (R2 / (R1 + R2))\nConnect 5V Signal ---> [R1: 1.8k] ---> [GPIO Node] ---> [R2: 3.3k] ---> GND",
-        codeSnippet: "// Example calculation for 5V to 3.3V resistor divider:\n// R1 = 2000 ohms (2k)\n// R2 = 3300 ohms (3.3k)\n// Vout = 5.0V * (3300 / (2000 + 3300)) = 3.11V (Safe LVCMOS HIGH for ESP32)"
+        circuitDiagramNote: "5V Signal -> [1kΩ Resistor] -> (ESP32 GPIO Pin) -> [2kΩ Resistor] -> GND."
       }
     },
 
-    "diag_gpio_level_shifter_required": {
-      id: "diag_gpio_level_shifter_required",
+    "diag_gpio_inductive_back_emf": {
+      id: "diag_gpio_inductive_back_emf",
+      ruleId: "RULE-GPIO-02",
       type: "diagnosis",
       category: "gpio",
-      title: "5V TTL Logic Level Incompatibility",
-      severity: "WARNING",
-      symptomSummary: "ESP32 pin reads corrupted data or stuck HIGH when reading 5V sensors.",
-      diagnosis: "LVCMOS 3.3V Input Buffer Over-Stress & Invalid High Logic Level Threshold.",
-      rootCause: "ESP32 I/O pins operate at 3.3V logic. Feeding 5V into input pins stresses the internal CMOS gates and risks premature hardware failure.",
-      engineeringSolution: {
-        summary: "Use high-speed Optocoupler or MOSFET Logic Shifter module.",
-        steps: [
-          "Use a 4-channel BSS138-based logic level shifter board (TXS0108E / TXB0104).",
-          "Connect High Voltage side (HV) to 5V rail, Low Voltage side (LV) to ESP32 3.3V rail."
-        ]
-      }
-    },
-
-    "diag_gpio_inductive_kickback": {
-      id: "diag_gpio_inductive_kickback",
-      type: "diagnosis",
-      category: "gpio",
-      title: "Inductive Voltage Flyback Spike from Relay Coil",
+      confidenceFactor: 0.98,
+      formalRuleStatement: "IF (Load_Type == 'Inductive_Coil') ∧ (Flyback_Diode == NONE) THEN HYPOTHESIS('Inductive Back-EMF High Voltage Transient Spike', CF=0.98)",
+      antecedents: [
+        "Inductive coil (relay, solenoid, DC motor) switched by transistor/MOSFET from ESP32 pin",
+        "Magnetic field collapses instantly on turn-off (V = -L * di/dt), generating >50V transient spike",
+        "Absence of reverse flyback diode (1N4007 or 1N4148) across coil terminals"
+      ],
+      title: "Inductive Relay Coil Back-EMF High Voltage Spike",
       severity: "CRITICAL",
-      symptomSummary: "ESP32 resets or freezes immediately whenever relay turns OFF.",
-      diagnosis: "Inductive Back-EMF Voltage Kickback Spike.",
-      rootCause: "When current through an inductive relay coil is abruptly switched OFF by a GPIO, the collapsing magnetic field generates a reverse voltage spike (Back-EMF: $V = -L \\frac{di}{dt}$) exceeding tens or hundreds of volts, spiking the ground plane and resetting the ESP32 core.",
+      symptomSummary: "ESP32 crashes or reboots with Guru Meditation Error every time a relay or motor switches OFF.",
+      diagnosis: "Inductive Flyback Voltage Transient Spikes (>50V) Coupling into Power/Ground Planes.",
+      rootCause: "When an inductive relay coil or motor is switched off, the collapsing magnetic field creates a high-voltage back-EMF transient spike (V = -L * di/dt) exceeding 50V. Without a reverse flyback diode, this high-voltage spike surges into the transistor collector/drain and grounds, causing core CPU latch-up.",
       engineeringSolution: {
-        summary: "Drive relays using Transistors/MOSFETs with a Flyback Anti-Parallel Diode.",
+        summary: "Install a 1N4007 or 1N4148 flyback diode in reverse parallel across the relay coil terminals, and use optoisolators.",
         steps: [
-          "Never power or drive relay coils directly from ESP32 GPIO pins (max safe GPIO current is 12mA).",
-          "Use an optocoupler-isolated relay module powered by an external 5V power supply with JD-VCC jumper removed.",
-          "Place a flyback diode (e.g. 1N4007 or 1N4148) across relay coil terminals (cathode to +5V, anode to transistor collector)."
+          "Solder a 1N4007 or 1N4148 diode across the relay coil terminals (cathode/stripe to +V supply, anode to switching transistor collector).",
+          "Use optocoupler-isolated relay breakout boards (PC817) with separate JD-VCC power feeds.",
+          "Add a 100nF snubber capacitor across motor terminals to suppress RF arcing noise."
         ],
-        circuitDiagramNote: "ESP32 GPIO ---> [1k resistor] ---> [Base of 2N2222 NPN Transistor]\nCollector ---> [Relay Coil (-)] & [Anode of 1N4007 Diode]\nEmitter ---> GND\n[Relay Coil (+)] & [Cathode of 1N4007 Diode] ---> External 5V Power"
+        circuitDiagramNote: "Relay Coil (+) -> Cathode (Stripe) of 1N4007 | Relay Coil (-) -> Anode of 1N4007."
       }
     },
 
-    "diag_gpio_floating_input": {
-      id: "diag_gpio_floating_input",
+    "diag_gpio_floating_input_noise": {
+      id: "diag_gpio_floating_input_noise",
+      ruleId: "RULE-GPIO-03",
       type: "diagnosis",
       category: "gpio",
-      title: "High-Impedance Floating Input Noise Sensitivity",
+      confidenceFactor: 0.95,
+      formalRuleStatement: "IF (PinMode == 'INPUT') ∧ (PullResistor == NONE) THEN HYPOTHESIS('High-Impedance Floating Input Electrostatic Noise', CF=0.95)",
+      antecedents: [
+        "Pin configured as basic pinMode(pin, INPUT) without pull-up or pull-down resistor",
+        "High-impedance CMOS gate picks up capacitive 50/60Hz mains hum and RF noise"
+      ],
+      title: "High-Impedance Floating Input & Electrostatic Noise",
       severity: "INFO",
-      symptomSummary: "Digital pin reads random toggle states (0 and 1) when no button is pressed or sensor is idle.",
-      diagnosis: "Floating High-Impedance GPIO Input.",
-      rootCause: "When configured as a standard INPUT, ESP32 GPIO pins have extremely high impedance (>100MΩ) and act as miniature antennas picking up ambient electromagnetic 50/60Hz noise.",
+      symptomSummary: "digitalRead() returns random 0 and 1 values when a pushbutton is not pressed; reading changes when hands approach board.",
+      diagnosis: "High-Impedance Floating CMOS Input Gate.",
+      rootCause: "CMOS input pins have gigohm input impedance. When disconnected, the gate acts as an antenna, picking up 50Hz/60Hz electromagnetic hum and electrostatic charges, resulting in unpredictable digital readings.",
       engineeringSolution: {
-        summary: "Enable internal pull-up / pull-down resistors or add external 10kΩ resistor.",
+        summary: "Configure internal pull-up resistor using pinMode(pin, INPUT_PULLUP) in setup().",
         steps: [
-          "In software, configure pinMode(pin, INPUT_PULLUP) or pinMode(pin, INPUT_PULLDOWN).",
-          "If using long external wires, place a physical 10kΩ pull-up resistor between the GPIO pin and 3.3V."
+          "Change pinMode(pin, INPUT) to pinMode(pin, INPUT_PULLUP) in firmware.",
+          "Wire the button between the GPIO pin and GND (reading will be LOW when pressed, HIGH when open).",
+          "Note: GPIO 34-39 (Input-Only pins) do NOT have internal pull-up/pull-down resistors and require external 10kΩ resistors."
         ],
-        codeSnippet: "void setup() {\n  // Enable internal 45k-ohm pull-up resistor to pull pin HIGH when unpressed\n  pinMode(BUTTON_PIN, INPUT_PULLUP);\n}"
+        codeSnippet: "const int BUTTON_PIN = 4;\n\nvoid setup() {\n  Serial.begin(115200);\n  // Enable internal 45k pull-up resistor:\n  pinMode(BUTTON_PIN, INPUT_PULLUP);\n}\n\nvoid loop() {\n  // Active LOW: Button pressed = LOW\n  if (digitalRead(BUTTON_PIN) == LOW) {\n    Serial.println(\"Button Pressed!\");\n    delay(200); // Debounce delay\n  }\n}"
       }
     },
 
     // ==========================================
-    // FAULT TREE 5: ANTENNA / 2.4GHz NOISE
+    // FAULT TREE 5: ANTENNA & RF NOISE
     // ==========================================
     "q_antenna_type": {
       id: "q_antenna_type",
+      ruleId: "RULE-ANT-Q01",
       type: "question",
       category: "antenna",
-      title: "Antenna Hardware Configuration",
-      question: "Which type of antenna is installed on your ESP32 module?",
-      description: "Determining RF path selection, impedance matching, and physical enclosure effects.",
+      title: "Antenna Hardware Configuration & Enclosure",
+      question: "What physical antenna type and enclosure are used on the ESP32 node?",
+      description: "ESP32 modules support onboard PCB trace antennas or external u.FL IPEX connectors.",
       options: [
         {
-          id: "opt_ant_ipex_whip",
-          label: "External Whip/Omni Antenna connected via IPEX / u.FL connector",
-          description: "ESP32-WROOM-32U or board with u.FL connector.",
-          nextNodeId: "q_antenna_resistor_selector",
-          keywords: ["external", "whip", "omni", "ipex", "u.fl", "connector"]
-        },
-        {
-          id: "opt_ant_pcb_trace",
-          label: "Onboard On-PCB Meandering Inverted-F (MIFA) Trace Antenna",
-          description: "Standard ESP32-WROOM-32 module with printed antenna.",
-          nextNodeId: "q_antenna_enclosure_metal",
-          keywords: ["onboard", "pcb", "trace", "mifa", "printed", "internal"]
-        }
-      ]
-    },
-
-    "q_antenna_resistor_selector": {
-      id: "q_antenna_resistor_selector",
-      type: "question",
-      category: "antenna",
-      title: "u.FL / IPEX Zero-Ohm SMD Jumper Position",
-      question: "On dev boards with both PCB trace & u.FL connector, has the 0-ohm selector resistor been moved to the u.FL position?",
-      description: "Many ESP32 dev boards route RF signals to the PCB antenna by default using a 0402 0-ohm jumper.",
-      options: [
-        {
-          id: "opt_ant_jumper_wrong",
-          label: "External antenna plugged in, but 0-ohm SMD resistor is still soldered toward the PCB trace antenna",
-          description: "RF signal is disconnected from u.FL connector.",
+          id: "opt_ant_ufl_misconfigured",
+          label: "External antenna connected to u.FL IPEX port, but zero-ohm selector resistor was NOT relocated",
+          description: "Signal path remains routed to internal PCB trace antenna, leaving external antenna disconnected.",
           nextNodeId: "diag_antenna_jumper_mismatch",
-          keywords: ["jumper", "0-ohm", "resistor", "solder", "trace", "wrong"]
+          keywords: ["ufl", "u.fl", "ipex", "external", "resistor", "0402", "jumper", "resistor"]
         },
-        {
-          id: "opt_ant_jumper_ok",
-          label: "Resistor is placed correctly or board has u.FL only, but RSSI is still below -85dBm",
-          description: "Co-channel interference or physical barrier issue.",
-          nextNodeId: "q_antenna_enclosure_metal",
-          keywords: ["correct", "u.fl", "rssi", "below", "-85dbm", "interference", "barrier"]
-        }
-      ]
-    },
-
-    "q_antenna_enclosure_metal": {
-      id: "q_antenna_enclosure_metal",
-      type: "question",
-      category: "antenna",
-      title: "Physical Environment & Enclosure Shielding",
-      question: "Is the ESP32 installed inside a metal / aluminum box, or near large ground planes / copper traces?",
-      description: "Metals create a Faraday cage, attenuating RF electromagnetic wave propagation.",
-      options: [
         {
           id: "opt_ant_metal_box",
-          label: "Mounted inside a metal electrical junction box, metal chassis, or metal foil shield",
-          description: "Faraday cage shielding RF signals.",
+          label: "ESP32 enclosed inside a solid metal junction box or aluminum project casing",
+          description: "Faraday cage effect completely attenuating 2.4GHz RF signals.",
           nextNodeId: "diag_antenna_faraday_attenuation",
-          keywords: ["metal", "junction", "box", "chassis", "foil", "shield", "faraday"]
+          keywords: ["metal", "aluminum", "box", "enclosure", "casing", "faraday", "shielding"]
         },
         {
           id: "opt_ant_noise_24ghz",
-          label: "Enclosure is plastic, but packet drops surge near microwave ovens, USB 3.0 hubs, or Bluetooth beacons",
+          label: "Plastic enclosure used, but packet drops surge near microwave ovens, USB 3.0 hubs, or dense Bluetooth beacons",
           description: "Severe 2.4GHz ISM spectrum noise and co-channel interference.",
           nextNodeId: "diag_antenna_24ghz_cochannel_noise",
-          keywords: ["plastic", "microwave", "oven", "usb", "hub", "bluetooth", "beacon", "noise"]
+          keywords: ["plastic", "microwave", "oven", "usb", "hub", "bluetooth", "beacon", "noise", "interference"]
         }
       ]
     },
 
     "diag_antenna_jumper_mismatch": {
       id: "diag_antenna_jumper_mismatch",
+      ruleId: "RULE-ANT-01",
       type: "diagnosis",
       category: "antenna",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (AntennaPort == 'u.FL_External') ∧ (SMD_0402_Jumper == 'PCB_Trace_Position') THEN HYPOTHESIS('Zero-Ohm RF Path Jumper Selector Mismatch', CF=0.99)",
+      antecedents: [
+        "External omnidirectional antenna connected via u.FL IPEX connector",
+        "Onboard 0402 zero-ohm RF SMD resistor left in factory default position connecting PCB trace antenna",
+        "External antenna port remains un-driven and floating, causing high SWR RF reflection"
+      ],
       title: "Zero-Ohm RF Path Jumper Selector Mismatch",
       severity: "CRITICAL",
       symptomSummary: "External antenna connected via u.FL yields zero range improvement or near 100% packet loss (RSSI < -90dBm).",
       diagnosis: "RF Signal Path Disconnected / Zero-Ohm Jumper Set to Internal PCB Antenna.",
-      rootCause: "ESP32 modules with dual antenna options utilize a 0402-size zero-ohm SMD resistor as an RF multiplexer jumper. If left in the default position, the u.FL connector remains floating and un-driven, causing high Standing Wave Ratio (SWR) reflections.",
+      rootCause: "ESP32 modules with dual antenna options utilize a tiny 0402-size zero-ohm SMD resistor as an RF multiplexer jumper. If left in the default position, the u.FL connector remains floating and un-driven, causing high Standing Wave Ratio (SWR) reflections.",
       engineeringSolution: {
         summary: "Resolder 0402 0-ohm resistor toward the u.FL connector pad under a microscope.",
         steps: [
@@ -778,48 +769,327 @@ export const knowledgeBase = {
 
     "diag_antenna_faraday_attenuation": {
       id: "diag_antenna_faraday_attenuation",
+      ruleId: "RULE-ANT-02",
       type: "diagnosis",
       category: "antenna",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (Enclosure_Material == 'Metal_Conductive') ∧ (Antenna == 'Internal_Inside_Box') THEN HYPOTHESIS('Faraday Shielding Attenuation by Metallic Enclosure', CF=0.99)",
+      antecedents: [
+        "ESP32 operates inside grounded conductive metal enclosure (steel/aluminum)",
+        "2.4GHz RF electromagnetic waves attenuated by >40dB (10,000x signal power reduction)"
+      ],
       title: "Faraday Shielding Attenuation by Metallic Enclosure",
       severity: "CRITICAL",
       symptomSummary: "ESP32 works on workbench, but loses connection immediately when cabinet door closes.",
       diagnosis: "RF Electromagnetic Attenuation / Faraday Cage Effect.",
-      rootCause: "Conductive metal enclosures (aluminum, steel, carbon fiber) reflect and absorb 2.4GHz radio waves, attenuating signal strength by 30dB to 50dB (1000x - 100000x signal power reduction).",
+      rootCause: "Conductive metal enclosures reflect and absorb 2.4GHz radio waves, attenuating signal strength by 30dB to 50dB (1,000x to 100,000x signal power reduction).",
       engineeringSolution: {
         summary: "Mount an external high-gain waterproof omni antenna outside the metal cabinet.",
         steps: [
           "Drill a hole in the metallic cabinet and install an IP67 SMA Female bulkhead connector.",
           "Connect an IPEX/u.FL to SMA pigtail cable from the ESP32 module to the SMA bulkhead.",
-          "Attach a 2.4GHz 5dBi external rubber duck / omnidirectional antenna on the outside of the enclosure."
+          "Attach a 2.4GHz 5dBi external omnidirectional antenna on the outside of the enclosure."
         ]
       }
     },
 
     "diag_antenna_24ghz_cochannel_noise": {
       id: "diag_antenna_24ghz_cochannel_noise",
+      ruleId: "RULE-ANT-03",
       type: "diagnosis",
       category: "antenna",
+      confidenceFactor: 0.94,
+      formalRuleStatement: "IF (RF_Band == '2.4GHz_ISM') ∧ (NoiseSource == 'USB3_Microwave_Bluetooth') THEN HYPOTHESIS('2.4GHz ISM Band Co-Channel Spectrum Noise & Packet Loss', CF=0.94)",
+      antecedents: [
+        "Unshielded USB 3.0 cables or microwave ovens emitting wideband noise in 2.400–2.4835 GHz band",
+        "MAC layer CSMA/CA backoff timers constantly triggered, dropping throughput"
+      ],
       title: "2.4GHz ISM Band Co-Channel Spectrum Noise & Packet Loss",
       severity: "WARNING",
       symptomSummary: "Packet loss spikes periodically; RSSI fluctuates wildly despite fixed distance.",
       diagnosis: "2.4GHz ISM Band RF Noise & Co-Channel Interference.",
-      rootCause: "Unshielded USB 3.0 cables/hubs generate wideband noise in the 2.4GHz spectrum (2.400 - 2.4835 GHz). Microwave ovens leakage and dense Bluetooth / Zigbee networks cause frame collisions at the MAC layer.",
+      rootCause: "Unshielded USB 3.0 cables/hubs generate wideband noise in the 2.4GHz spectrum. Microwave oven radiation leakage and dense Bluetooth/Zigbee networks cause frame collisions at the MAC layer.",
       engineeringSolution: {
         summary: "Enable ESP32 Long Range (LR) Mode or switch Wi-Fi channels to 1, 6, or 11.",
         steps: [
-          "Use a Wi-Fi analyzer app to scan 2.4GHz channel utilization and lock your ESP32 / ESP-NOW nodes to non-overlapping Channel 1, 6, or 11.",
+          "Use a Wi-Fi analyzer app to scan 2.4GHz channel utilization and lock your nodes to non-overlapping Channel 1, 6, or 11.",
           "Enable ESP32 Wi-Fi Long Range Mode (WIFI_PROTOCOL_LR) which uses 1/2 or 1/4 rate CCK modulation to boost sensitivity by up to +4dBm.",
           "Keep ESP32 antenna at least 1 meter away from USB 3.0 external hard drive cables and microwave ovens."
         ],
-        codeSnippet: "// Enable ESP32 Wi-Fi Long Range Mode for enhanced noise immunity:\n#include <esp_wifi.h>\n\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  // Enable LR mode on STA interface\n  esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N | WIFI_PROTOCOL_LR);\n}"
+        codeSnippet: "#include <esp_wifi.h>\n\nvoid setup() {\n  WiFi.mode(WIFI_STA);\n  // Enable LR mode on STA interface for high noise immunity:\n  esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N | WIFI_PROTOCOL_LR);\n}"
       }
     },
 
     // ==========================================
-    // FAULT TREE 6: UNIVERSAL CUSTOM FALLBACK BRANCH
+    // FAULT TREE 6: I2C BUS & DISPLAY LOCKUPS
+    // ==========================================
+    "q_i2c_symptom": {
+      id: "q_i2c_symptom",
+      ruleId: "RULE-I2C-Q01",
+      type: "question",
+      category: "i2c",
+      title: "I2C Bus Wiring & Pull-Up Configuration",
+      question: "Are external 4.7kΩ pull-up resistors present on SDA (GPIO 21) and SCL (GPIO 22), and does the bus hang in Wire.endTransmission()?",
+      description: "I2C is an open-drain bus protocol requiring physical pull-up resistors to the 3.3V rail to pull lines HIGH.",
+      options: [
+        {
+          id: "opt_i2c_no_pullups",
+          label: "No external pull-up resistors installed; long jumper wires (>20cm) used",
+          description: "Lines cannot rise to 3.3V logic HIGH, causing indefinite clock stretching bus hang.",
+          nextNodeId: "diag_i2c_bus_lockup",
+          keywords: ["i2c", "pullup", "pull-up", "4.7k", "sda", "scl", "hang", "lockup"]
+        },
+        {
+          id: "opt_i2c_address_mismatch",
+          label: "Pull-ups are present, but sensor returns 0xFF / NACK on initialization",
+          description: "Slave address mismatch (e.g., 0x3C vs 0x3D on SSD1306 OLED displays).",
+          nextNodeId: "diag_i2c_address_nack",
+          keywords: ["address", "nack", "0x3c", "0x3d", "ssd1306", "scanner", "ack"]
+        }
+      ]
+    },
+
+    "diag_i2c_bus_lockup": {
+      id: "diag_i2c_bus_lockup",
+      ruleId: "RULE-I2C-01",
+      type: "diagnosis",
+      category: "i2c",
+      confidenceFactor: 0.98,
+      formalRuleStatement: "IF (I2C_PullUps == NONE) ∧ (Wire_Hang == TRUE) THEN HYPOTHESIS('I2C Open-Drain Bus Lockup & Missing 4.7kΩ Pull-Ups', CF=0.98)",
+      antecedents: [
+        "I2C SDA and SCL lines lack physical 4.7kΩ pull-up resistors to 3.3V rail",
+        "Wire library execution blocks permanently waiting for SDA/SCL rise-time threshold"
+      ],
+      title: "I2C Open-Drain Bus Lockup & Missing 4.7kΩ Pull-Up Resistors",
+      severity: "CRITICAL",
+      symptomSummary: "ESP32 freezes permanently inside Wire.begin() or Wire.endTransmission() during OLED display or BME280 sensor read.",
+      diagnosis: "Open-Drain Line Starvation Causing Hardware Bus Lockup.",
+      rootCause: "I2C drivers operate with open-drain MOSFETs that only pull signals LOW. Without physical 4.7kΩ pull-up resistors to 3.3V, stray capacitance on jumper wires prevents lines from rising to logic HIGH. The hardware I2C state machine waits indefinitely for slave acknowledge (ACK).",
+      engineeringSolution: {
+        summary: "Add 4.7kΩ pull-up resistors on both SDA and SCL lines to 3.3V, and enable I2C bus timeout handling in firmware.",
+        steps: [
+          "Solder a 4.7kΩ (or 3.3kΩ) resistor between SDA (GPIO 21) and 3V3.",
+          "Solder a 4.7kΩ resistor between SCL (GPIO 22) and 3V3.",
+          "Call Wire.setTimeOut(3000) to ensure the driver aborts gracefully instead of hanging the entire FreeRTOS execution thread."
+        ],
+        codeSnippet: "#include <Wire.h>\n\nvoid setup() {\n  Serial.begin(115200);\n  Wire.begin(21, 22); // SDA=21, SCL=22\n  // Prevent synchronous freezing on missing I2C slave:\n  Wire.setTimeOut(3000); // 3-second timeout\n}"
+      }
+    },
+
+    "diag_i2c_address_nack": {
+      id: "diag_i2c_address_nack",
+      ruleId: "RULE-I2C-02",
+      type: "diagnosis",
+      category: "i2c",
+      confidenceFactor: 0.96,
+      formalRuleStatement: "IF (Wire_ACK == NACK) ∧ (I2C_Address_Mismatch == TRUE) THEN HYPOTHESIS('I2C 7-Bit Slave Device Address Mismatch', CF=0.96)",
+      antecedents: [
+        "Slave sensor returns NACK (No Acknowledge) during address phase",
+        "Common SSD1306/MPU6050 address jumper soldered to secondary address"
+      ],
+      title: "I2C 7-Bit Slave Device Address Mismatch",
+      severity: "WARNING",
+      symptomSummary: "Display or sensor library fails initialization check; sensor.begin() returns false.",
+      diagnosis: "Incorrect 7-Bit I2C Slave Address Assigned in Code.",
+      rootCause: "Many I2C breakout modules (e.g. SSD1306 OLED displays, MPU6050 gyros) have hardware address configuration pins (ADDR/AD0). If ADDR is pulled HIGH, the device address shifts (e.g. from 0x3C to 0x3D or 0x68 to 0x69).",
+      engineeringSolution: {
+        summary: "Run an I2C Scanner sketch to detect the exact 7-bit hexadecimal address ACKed by your connected slave device.",
+        steps: [
+          "Flash an I2C scanner sketch to output detected addresses in hex on the Serial Monitor.",
+          "Update your display/sensor initialization call with the detected address (e.g. display.begin(SSD1306_SWITCHCAPVCC, 0x3C)).",
+          "Verify ground connection between ESP32 and sensor module."
+        ],
+        codeSnippet: "// Basic I2C Scanner snippet:\n#include <Wire.h>\nvoid setup() {\n  Wire.begin(21, 22);\n  Serial.begin(115200);\n  for (byte i = 8; i < 120; i++) {\n    Wire.beginTransmission(i);\n    if (Wire.endTransmission() == 0) {\n      Serial.printf(\"Found I2C device at 0x%02X\\n\", i);\n    }\n  }\n}"
+      }
+    },
+
+    // ==========================================
+    // FAULT TREE 7: SPI BUS & CS CONTENTION
+    // ==========================================
+    "q_spi_symptom": {
+      id: "q_spi_symptom",
+      ruleId: "RULE-SPI-Q01",
+      type: "question",
+      category: "spi",
+      title: "SPI Bus Peripheral Failure Mode",
+      question: "Is an SPI SD card or TFT display failing to initialize or corrupting data on a shared SPI bus?",
+      description: "SPI requires strict Chip Select (CS) line multiplexing and clean clock signal edges.",
+      options: [
+        {
+          id: "opt_spi_clock_too_fast",
+          label: "SPI SD card fails on breadboard with long jumper wires when clock frequency is >20 MHz",
+          description: "Clock signal edge degradation and capacitive ringing on breadboard wires.",
+          nextNodeId: "diag_spi_cs_contention",
+          keywords: ["spi", "sd", "card", "clock", "frequency", "20mhz", "breadboard", "speed"]
+        }
+      ]
+    },
+
+    "diag_spi_cs_contention": {
+      id: "diag_spi_cs_contention",
+      ruleId: "RULE-SPI-01",
+      type: "diagnosis",
+      category: "spi",
+      confidenceFactor: 0.95,
+      formalRuleStatement: "IF (SPI_Clock > 20MHz) ∧ (WireLength > 10cm) THEN HYPOTHESIS('SPI High Frequency Signal Slew & CS Contention', CF=0.95)",
+      antecedents: [
+        "SPI bus clock frequency set to default 40MHz or 80MHz over breadboard jumper wires",
+        "Trace capacitance and inductance causes MISO/MOSI bit framing corruption"
+      ],
+      title: "SPI High Frequency Slew Degradation & CS Contention",
+      severity: "WARNING",
+      symptomSummary: "SD.begin() returns false or SPI TFT display prints scrambled noise on breadboard.",
+      diagnosis: "Excessive SPI Clock Frequency for Breadboard Capacitance.",
+      rootCause: "High SPI clock frequencies (40MHz–80MHz) have rise times under 2 nanoseconds. Breadboard jumper wire capacitance (5–10pF per connection) rounds off clock edges, corrupting SPI data transmission.",
+      engineeringSolution: {
+        summary: "Lower SPI clock speed to 10MHz–14MHz and add 10kΩ pull-up resistors on CS lines.",
+        steps: [
+          "Lower SPI clock frequency in firmware: SD.begin(CS_PIN, SPI, 10000000) (10MHz).",
+          "Add 10kΩ pull-up resistors on all Chip Select (CS) lines to 3.3V to prevent floating select states during boot.",
+          "Keep SPI jumper wires shorter than 10cm."
+        ],
+        codeSnippet: "#include <SPI.h>\n#include <SD.h>\n\nconst int SD_CS = 5;\nvoid setup() {\n  Serial.begin(115200);\n  // Initialize SD card at conservative 10MHz clock speed:\n  if (!SD.begin(SD_CS, SPI, 10000000)) {\n    Serial.println(\"SD Card Mount Failed! Check wire lengths.\");\n  }\n}"
+      }
+    },
+
+    // ==========================================
+    // FAULT TREE 8: ADC2 & WI-FI PIN CONFLICT
+    // ==========================================
+    "q_adc_wifi_conflict": {
+      id: "q_adc_wifi_conflict",
+      ruleId: "RULE-ADC-Q01",
+      type: "question",
+      category: "adc",
+      title: "ADC Analog Input Pin Assignment",
+      question: "Which specific GPIO pins are configured for analogRead() while Wi-Fi or ESP-NOW is active?",
+      description: "ESP32 has two separate SAR ADCs: ADC1 (GPIO 32-39) and ADC2 (GPIO 0, 2, 4, 12, 13, 14, 15, 25, 26, 27).",
+      options: [
+        {
+          id: "opt_adc2_pins",
+          label: "Analog sensor is connected to ADC2 pins (GPIO 0, 2, 4, 12, 13, 14, 15, 25, 26, 27)",
+          description: "ADC2 hardware SAR is shared with the internal Wi-Fi radio driver.",
+          nextNodeId: "diag_adc2_wifi_conflict",
+          keywords: ["adc2", "gpio 2", "gpio 4", "gpio 12", "gpio 13", "gpio 14", "gpio 15", "gpio 25", "gpio 26", "gpio 27", "analogread"]
+        }
+      ]
+    },
+
+    "diag_adc2_wifi_conflict": {
+      id: "diag_adc2_wifi_conflict",
+      ruleId: "RULE-ADC-01",
+      type: "diagnosis",
+      category: "adc",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (ADC_Pin ∈ ADC2_GROUP) ∧ (WiFi_State == ACTIVE) THEN HYPOTHESIS('Hardware ADC2 Wi-Fi Radio Transceiver Conflict', CF=0.99)",
+      antecedents: [
+        "Analog input configured on GPIO 0, 2, 4, 12-15, 25-27 (ADC2)",
+        "Wi-Fi driver is active (WiFi.begin or esp_now_init)",
+        "Wi-Fi driver locks ADC2 hardware controller for RF calibration, causing analogRead() to fail"
+      ],
+      title: "Hardware ADC2 & Wi-Fi Radio Driver Pin Conflict",
+      severity: "CRITICAL",
+      symptomSummary: "analogRead() works initially, but returns 0, 4095, or freezes as soon as WiFi.begin() or esp_now_init() is called.",
+      diagnosis: "ADC2 Hardware Controller Locked by Wi-Fi Radio Driver.",
+      rootCause: "In the ESP32 silicon design, the ADC2 SAR controller is internally multiplexed with the Wi-Fi radio driver for RF power amplifier calibration. Whenever Wi-Fi is active, the Wi-Fi driver claims exclusive ownership of ADC2, causing any user analogRead() calls on ADC2 pins to fail completely.",
+      engineeringSolution: {
+        summary: "Move all analog sensor inputs to ADC1 pins (GPIO 32, 33, 34, 35, 36/VP, 39/VN).",
+        steps: [
+          "Move analog sensor wiring to ADC1 pins: GPIO 32, 33, 34, 35, 36 (VP), or 39 (VN).",
+          "ADC1 operates completely independently of the Wi-Fi radio subsystem.",
+          "Note: GPIO 34, 35, 36, 39 are input-only and have no internal pull-ups, which is ideal for analog sensors."
+        ],
+        codeSnippet: "// CORRECT: Use ADC1 pins when Wi-Fi is active\nconst int SENSOR_PIN = 34; // GPIO 34 is on ADC1 (Wi-Fi safe!)\n\nvoid setup() {\n  Serial.begin(115200);\n  WiFi.begin(\"SSID\", \"PASS\");\n}\nvoid loop() {\n  int val = analogRead(SENSOR_PIN); // Works 100% reliably with Wi-Fi on\n  Serial.printf(\"Sensor: %d\\n\", val);\n  delay(500);\n}"
+      }
+    },
+
+    // ==========================================
+    // FAULT TREE 9: STRAPPING PIN BOOT FAULTS
+    // ==========================================
+    "q_strapping_pins": {
+      id: "q_strapping_pins",
+      ruleId: "RULE-STRAP-Q01",
+      type: "question",
+      category: "strap",
+      title: "Bootloader Strapping Pin Logic State",
+      question: "Are external circuits, pull-ups, or sensor outputs connected to GPIO 0, GPIO 2, GPIO 12 (MTDI), or GPIO 15?",
+      description: "Strapping pins sample their logic level during the first millisecond of chip reset to configure boot mode and flash voltage.",
+      options: [
+        {
+          id: "opt_strap_gpio0_low",
+          label: "External sensor or button pulls GPIO 0 LOW or GPIO 2 HIGH during chip power-on",
+          description: "ESP32 enters UART serial flashing download mode instead of running SPI flash firmware.",
+          nextNodeId: "diag_strapping_pin_failure",
+          keywords: ["gpio0", "gpio2", "gpio12", "gpio15", "strapping", "download", "bootloader", "boot"]
+        },
+        {
+          id: "opt_strap_gpio12_high",
+          label: "External pull-up resistor or sensor on GPIO 12 (MTDI) pulls line HIGH at boot",
+          description: "Forces internal LDO to supply 1.8V to 3.3V flash memory, causing instant flash read crash.",
+          nextNodeId: "diag_flash_voltage_mismatch",
+          keywords: ["gpio12", "mtdi", "1.8v", "3.3v", "flash", "voltage", "pullup"]
+        }
+      ]
+    },
+
+    "diag_strapping_pin_failure": {
+      id: "diag_strapping_pin_failure",
+      ruleId: "RULE-STRAP-01",
+      type: "diagnosis",
+      category: "strap",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (GPIO0_Level_At_Reset == LOW) THEN HYPOTHESIS('Bootloader UART Download Mode Trap via Strapping Pin', CF=0.99)",
+      antecedents: [
+        "GPIO 0 pulled LOW during reset button release or power-on ramp",
+        "Hardware state machine enters ROM serial bootloader ('waiting for download') instead of executing user sketch from SPI Flash"
+      ],
+      title: "Bootloader Download Mode Trap via Strapping Pin (GPIO 0 / 2)",
+      severity: "CRITICAL",
+      symptomSummary: "ESP32 prints 'rst:0x1 (POWERON_RESET),boot:0x3 (DOWNLOAD_BOOT)' on 115200 baud and hangs; sketch never runs.",
+      diagnosis: "Hardware Strapping Pin Pulled into ROM Bootloader Download Mode.",
+      rootCause: "ESP32 samples GPIO 0, 2, 12, and 15 during the rising edge of the EN/Reset pin. If an external circuit holds GPIO 0 LOW during reset, the chip enters ROM bootloader mode for firmware flashing instead of executing user firmware from SPI flash.",
+      engineeringSolution: {
+        summary: "Move external switches and sensor outputs off GPIO 0 and GPIO 2 to non-strapping pins (e.g. GPIO 16, 17, 18, 19).",
+        steps: [
+          "Disconnect external sensors or buttons from GPIO 0 and GPIO 2.",
+          "Ensure GPIO 0 has a 10kΩ pull-up resistor to 3.3V so it defaults HIGH at reset.",
+          "Use safe general-purpose pins like GPIO 16, 17, 18, 19, 21, 22, 23 for user buttons and sensors."
+        ]
+      }
+    },
+
+    "diag_flash_voltage_mismatch": {
+      id: "diag_flash_voltage_mismatch",
+      ruleId: "RULE-FLASH-01",
+      type: "diagnosis",
+      category: "strap",
+      confidenceFactor: 0.99,
+      formalRuleStatement: "IF (GPIO12_Level_At_Reset == HIGH) THEN HYPOTHESIS('SPI Flash Voltage 1.8V/3.3V LDO Mismatch via MTDI Strapping', CF=0.99)",
+      antecedents: [
+        "GPIO 12 (MTDI) pulled HIGH during chip reset",
+        "Internal VDD_SDIO LDO regulator switches to 1.8V output instead of standard 3.3V",
+        "3.3V SPI Flash chip starves of operating voltage, causing instant crash"
+      ],
+      title: "SPI Flash Voltage 1.8V/3.3V LDO Mismatch (GPIO 12 MTDI)",
+      severity: "CRITICAL",
+      symptomSummary: "ESP32 prints 'flash read err, 1000' or crashes in continuous reboot loop after attaching a pull-up resistor to GPIO 12.",
+      diagnosis: "MTDI (GPIO 12) Strapping Pin Selected 1.8V Flash Mode.",
+      rootCause: "GPIO 12 (MTDI) controls the internal VDD_SDIO LDO regulator voltage for the SPI Flash memory. Standard ESP32-WROOM modules use 3.3V flash (requiring GPIO 12 to be LOW at boot). If an external circuit pulls GPIO 12 HIGH, the LDO outputs only 1.8V, starving the flash chip and causing continuous boot crashes.",
+      engineeringSolution: {
+        summary: "Never add external pull-up resistors to GPIO 12, or burn the flash voltage efuse to permanently lock 3.3V.",
+        steps: [
+          "Remove any external pull-up resistor from GPIO 12.",
+          "Ensure GPIO 12 is left floating or pulled LOW at boot time.",
+          "Permanent software fix: Burn the efuse using espefuse.py set_flash_voltage 3.3V to permanently ignore MTDI strapping."
+        ]
+      }
+    },
+
+    // ==========================================
+    // FAULT TREE 10: UNIVERSAL CUSTOM FALLBACK
     // ==========================================
     "custom_step_2": {
       id: "custom_step_2",
+      ruleId: "RULE-CUSTOM-Q01",
       type: "question",
       category: "custom",
       title: "Custom Issue Persistence & Repeatability",
@@ -829,7 +1099,7 @@ export const knowledgeBase = {
         {
           id: "opt_custom_consistent",
           label: "Consistently on every boot",
-          description: "Issue recurs predictably every time power is applied or micro-controller resets.",
+          description: "Issue recurs predictably every time power is applied or microcontroller resets.",
           nextNodeId: "custom_step_3",
           keywords: ["consistent", "consistently", "boot", "every", "always", "predictable"]
         },
@@ -845,6 +1115,7 @@ export const knowledgeBase = {
 
     "custom_step_3": {
       id: "custom_step_3",
+      ruleId: "RULE-CUSTOM-Q02",
       type: "question",
       category: "custom",
       title: "Hardware Peripheral Isolation Test",
@@ -870,8 +1141,16 @@ export const knowledgeBase = {
 
     "custom_diag_final": {
       id: "custom_diag_final",
+      ruleId: "RULE-CUSTOM-FINAL",
       type: "diagnosis",
       category: "custom",
+      confidenceFactor: 0.88,
+      formalRuleStatement: "IF (Unmapped_Symptom_Set == TRUE) ∧ (Heuristic_Synthesis == ACTIVE) THEN HYPOTHESIS('Unmapped Hardware Failure Mode / Peripheral Overload', CF=0.88)",
+      antecedents: [
+        "Reported symptoms failed to match pre-programmed production rules",
+        "Technician observation tags logged in working memory",
+        "Deep heuristic domain analysis synthesized"
+      ],
       title: "Custom Symptom Diagnostics & Hardware Isolation Analysis",
       severity: "WARNING",
       symptomSummary: "Custom user-reported hardware symptom captured during diagnostic traversal.",
@@ -891,4 +1170,3 @@ export const knowledgeBase = {
     }
   }
 };
-

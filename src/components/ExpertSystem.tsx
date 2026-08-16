@@ -1,20 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { knowledgeBase, KnowledgeNode, DiagnosisNode } from "@/data/knowledgeBase";
 import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
+import { Sidebar, SidebarViewType } from "./Sidebar";
 import { DashboardView } from "./DashboardView";
 import { DiagnosticView } from "./DiagnosticView";
 import { DiagnosisReportView } from "./DiagnosisReportView";
-import { HardwareLogsView } from "./HardwareLogsView";
+import { HardwareLogsView, LogEntry } from "./HardwareLogsView";
+import { SerialMonitorView } from "./SerialMonitorView";
 import { KnowledgeBaseView } from "./KnowledgeBaseView";
+import { SystemSpecsView } from "./SystemSpecsView";
 import { AboutView } from "./AboutView";
 
-export function ExpertSystem() {
-  const [activeView, setActiveView] = useState<
-    "dashboard" | "diagnostic" | "logs" | "knowledge_base" | "about"
-  >("dashboard");
+interface ExpertSystemProps {
+  onSignOut?: () => void;
+}
+
+export function ExpertSystem({ onSignOut }: ExpertSystemProps) {
+  const [activeView, setActiveView] = useState<SidebarViewType>("dashboard");
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -25,6 +29,19 @@ export function ExpertSystem() {
   const [history, setHistory] = useState<string[]>([]);
   const [customDiagnosisNode, setCustomDiagnosisNode] = useState<DiagnosisNode | null>(null);
   const [customLogs, setCustomLogs] = useState<string[]>([]);
+  const [sessionLogs, setSessionLogs] = useState<LogEntry[]>([]);
+
+  // Load persistent session logs on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("netdiag_session_logs");
+      if (saved) {
+        setSessionLogs(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Failed to load saved session logs:", e);
+    }
+  }, []);
 
   const currentNode: KnowledgeNode = knowledgeBase.nodes[currentNodeId];
 
@@ -33,6 +50,56 @@ export function ExpertSystem() {
     if (logText.trim()) {
       setCustomLogs((prev) => [...prev, logText.trim()]);
     }
+  };
+
+  // Record completed diagnosis into persistent session logs
+  const handleLogSession = (node: DiagnosisNode) => {
+    const isCustom = node.id.startsWith("custom") || node.id.startsWith("heuristic");
+    const newLog: LogEntry = {
+      id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+      ruleId: node.ruleId || (isCustom ? "RULE-HEURISTIC" : "RULE-DET"),
+      confidenceFactor: node.confidenceFactor || (isCustom ? 0.88 : 0.98),
+      timestamp: new Date().toISOString().replace("T", " ").slice(0, 19),
+      category: node.category.toUpperCase(),
+      fault: node.title,
+      diagnosisTitle: node.diagnosis || node.title,
+      severity: node.severity,
+      details: node.rootCause,
+      remediation: node.engineeringSolution.summary,
+      technicianInputs: customLogs
+    };
+
+    setSessionLogs((prev) => {
+      // Avoid duplicate logs for identical diagnosis within same minute
+      const exists = prev.some(
+        (l) =>
+          l.diagnosisTitle === newLog.diagnosisTitle &&
+          l.timestamp.slice(0, 16) === newLog.timestamp.slice(0, 16)
+      );
+      if (exists) return prev;
+      const updated = [newLog, ...prev];
+      try {
+        localStorage.setItem("netdiag_session_logs", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const handleClearLogs = () => {
+    setSessionLogs([]);
+    try {
+      localStorage.removeItem("netdiag_session_logs");
+    } catch (e) {}
+  };
+
+  const handleDeleteLog = (id: string) => {
+    setSessionLogs((prev) => {
+      const updated = prev.filter((l) => l.id !== id);
+      try {
+        localStorage.setItem("netdiag_session_logs", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   };
 
   // Handle option click in wizard
@@ -46,6 +113,14 @@ export function ExpertSystem() {
   // Handle generative AI / heuristic custom diagnosis node injection
   const handleCustomDiagnosis = (customNode: DiagnosisNode) => {
     setCustomDiagnosisNode(customNode);
+    setActiveView("diagnostic");
+  };
+
+  // Jump directly to any previous question step in history
+  const handleJumpToStep = (nodeId: string, stepIndex: number) => {
+    setCustomDiagnosisNode(null);
+    setHistory((prev) => prev.slice(0, stepIndex));
+    setCurrentNodeId(nodeId);
     setActiveView("diagnostic");
   };
 
@@ -68,16 +143,15 @@ export function ExpertSystem() {
     setCustomDiagnosisNode(null);
     setCustomLogs([]);
     setCurrentNodeId(knowledgeBase.initialQuestionId);
-    setActiveView("dashboard");
+    setActiveView("diagnostic");
   };
 
-  // Start diagnostic from dashboard
+  // Start diagnostic from dashboard across 9 domains
   const handleStartDiagnostic = (categoryKey?: string) => {
     setHistory([]);
     setCustomDiagnosisNode(null);
     setCustomLogs([]);
     if (categoryKey) {
-      // Map category to starting question
       switch (categoryKey) {
         case "brownout":
           setCurrentNodeId("q_brownout_timing");
@@ -94,6 +168,18 @@ export function ExpertSystem() {
         case "antenna":
           setCurrentNodeId("q_antenna_type");
           break;
+        case "i2c":
+          setCurrentNodeId("q_i2c_symptom");
+          break;
+        case "spi":
+          setCurrentNodeId("q_spi_symptom");
+          break;
+        case "adc":
+          setCurrentNodeId("q_adc_wifi_conflict");
+          break;
+        case "strap":
+          setCurrentNodeId("q_strapping_pins");
+          break;
         default:
           setCurrentNodeId(knowledgeBase.initialQuestionId);
       }
@@ -103,8 +189,16 @@ export function ExpertSystem() {
     setActiveView("diagnostic");
   };
 
+  // Auto-launch diagnosis directly from serial crash dump pattern match
+  const handleAutoDiagnoseFromSerial = (targetNodeId: string) => {
+    setCustomDiagnosisNode(null);
+    setHistory([knowledgeBase.initialQuestionId, "serial_crash_pattern"]);
+    setCurrentNodeId(targetNodeId);
+    setActiveView("diagnostic");
+  };
+
   return (
-    <div className="h-screen w-full flex overflow-hidden bg-deep-slate text-white font-sans selection:bg-neon-cyan selection:text-slate-950">
+    <div className="h-screen w-full flex overflow-hidden bg-[#0a0c10] text-[#f0f6fc] font-sans selection:bg-[#00f2fe]/20 selection:text-[#00f2fe]">
       {/* Structural Collapsible Sidebar (Left Side) */}
       <Sidebar
         isOpenMobile={mobileSidebarOpen}
@@ -136,15 +230,17 @@ export function ExpertSystem() {
               : undefined
           }
           activeView={activeView}
+          onSignOut={onSignOut}
         />
 
         {/* Scrollable Main Workspace Area (Zero Dead Side Whitespace) */}
-        <main className="flex-1 w-full overflow-y-auto p-6 sm:p-8 min-w-0">
+        <main className="flex-1 w-full overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0 bg-[#0a0c10]">
           {/* 1. Dashboard View */}
           {activeView === "dashboard" && (
             <DashboardView
               onStartDiagnostic={handleStartDiagnostic}
               onViewLogs={() => setActiveView("logs")}
+              recentLogs={sessionLogs}
             />
           )}
 
@@ -157,6 +253,7 @@ export function ExpertSystem() {
                   history={history}
                   customLogs={customLogs}
                   onReset={handleReset}
+                  onLogSession={handleLogSession}
                 />
               ) : (
                 <>
@@ -170,6 +267,7 @@ export function ExpertSystem() {
                       onCustomDiagnosis={handleCustomDiagnosis}
                       onGoBack={handleGoBack}
                       onReset={handleReset}
+                      onJumpToStep={handleJumpToStep}
                     />
                   )}
 
@@ -179,6 +277,7 @@ export function ExpertSystem() {
                       history={history}
                       customLogs={customLogs}
                       onReset={handleReset}
+                      onLogSession={handleLogSession}
                     />
                   )}
                 </>
@@ -186,13 +285,27 @@ export function ExpertSystem() {
             </>
           )}
 
-          {/* 3. Hardware Logs View */}
-          {activeView === "logs" && <HardwareLogsView />}
+          {/* 3. USB Web Serial Monitor View */}
+          {activeView === "serial_monitor" && (
+            <SerialMonitorView onAutoDiagnoseRule={handleAutoDiagnoseFromSerial} />
+          )}
+
+          {/* 4. Hardware Logs View */}
+          {activeView === "logs" && (
+            <HardwareLogsView
+              logs={sessionLogs}
+              onClearLogs={handleClearLogs}
+              onDeleteLog={handleDeleteLog}
+            />
+          )}
 
           {/* 4. Knowledge Base View */}
           {activeView === "knowledge_base" && <KnowledgeBaseView />}
 
-          {/* 5. About View */}
+          {/* 5. System Architecture / Specs View */}
+          {activeView === "specs" && <SystemSpecsView />}
+
+          {/* 6. About View */}
           {activeView === "about" && <AboutView />}
         </main>
       </div>
