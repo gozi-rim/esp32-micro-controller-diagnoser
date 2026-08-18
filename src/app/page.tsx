@@ -112,6 +112,7 @@ export default function LandingPage() {
     { label: "Features", href: "#features" },
     { label: "How It Works", href: "#how-it-works" },
     { label: "Metrics", href: "#metrics" },
+    { label: "Defense Deck", href: "/defense" },
   ];
 
   return (

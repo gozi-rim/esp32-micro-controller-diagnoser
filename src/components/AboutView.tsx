@@ -84,7 +84,7 @@ export function AboutView() {
       isHighlighted: true
     },
     {
-      name: "Ezeigbo Valentine Chukwuemeka",
+      name: "Justin Steve Homa",
       matric: "U2021/3020051",
       role: "Member",
       contribution: "Serial Monitor Panic Log Classifier Integration",
@@ -145,9 +145,23 @@ export function AboutView() {
             About NetDiag Expert
           </h1>
 
-          <p className="text-xs sm:text-sm text-slate-400 font-sans max-w-3xl">
-            A forward-chaining rule-based expert system for automated diagnosis of localized hardware and communication faults in ESP32-based IoT networks. Built for the ECE 515.2 (Introduction to Artificial Intelligence) capstone project at the University of Port Harcourt.
-          </p>
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <a
+              href="/defense"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#00f2fe] to-[#10b981] text-[#0a0c10] font-sans font-bold text-xs hover:shadow-lg hover:shadow-[#00f2fe]/20 transition-all cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-[#0a0c10]" />
+              Launch Defense Presentation Deck (8 Slides)
+            </a>
+            <a
+              href="/defense.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0d1117] hover:bg-[#1c2433] text-slate-300 hover:text-white border border-white/[0.08] font-mono text-xs transition-all"
+            >
+              Open Standalone HTML
+            </a>
+          </div>
         </div>
       </div>
 

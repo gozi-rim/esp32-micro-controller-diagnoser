@@ -78,7 +78,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     contribution: "Knowledge Base Data Entry & Rule Verification",
   },
   {
-    name: "Ezeigbo Valentine Chukwuemeka",
+    name: "Justin Steve Homa",
     matric: "U2021/3020051",
     role: "Member",
     contribution: "Serial Monitor Panic Log Classifier Integration",

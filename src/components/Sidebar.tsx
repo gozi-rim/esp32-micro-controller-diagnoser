@@ -14,8 +14,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
-  Usb
+  Usb,
+  Presentation
 } from "lucide-react";
+import Link from "next/link";
 
 export type SidebarViewType =
   | "dashboard"
@@ -98,6 +100,8 @@ export function Sidebar({
       badgeColor: "bg-[#10b981]/10 text-[#10b981] border-[#10b981]/20"
     }
   ];
+
+  const showLabels = !isCollapsed || isOpenMobile;
 
   return (
     <>
@@ -196,6 +200,30 @@ export function Sidebar({
                 </button>
               );
             })}
+
+            {/* Defense Deck Quick Launch */}
+            <Link
+              href="/defense"
+              title={!showLabels ? "Defense Presentation Deck" : undefined}
+              className={`w-full flex items-center ${
+                showLabels ? "justify-between px-3" : "justify-center px-0"
+              } py-2.5 rounded-xl text-xs font-medium transition-all bg-gradient-to-r from-[#00f2fe]/10 to-[#10b981]/10 text-slate-200 hover:text-white border border-[#00f2fe]/20 hover:border-[#00f2fe]/40 mt-2`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Presentation className="w-4 h-4 text-[#00f2fe] shrink-0" />
+                {showLabels && (
+                  <span className="truncate font-sans font-semibold tracking-tight text-left">
+                    Defense Deck
+                  </span>
+                )}
+              </div>
+
+              {showLabels && (
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md border bg-[#00f2fe]/20 text-[#00f2fe] border-[#00f2fe]/40 shrink-0">
+                  8 SLIDES
+                </span>
+              )}
+            </Link>
           </nav>
         </div>
 
