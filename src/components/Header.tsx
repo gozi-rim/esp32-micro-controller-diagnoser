@@ -21,10 +21,8 @@ import {
   BookOpen,
   Terminal,
   Save,
-  Key,
-  Presentation
+  Key
 } from "lucide-react";
-import Link from "next/link";
 
 import { useAuth } from "@/components/AuthContext";
 
@@ -219,16 +217,6 @@ export function Header({
             </button>
           )}
 
-          {/* Defense Presentation Link */}
-          <Link
-            href="/defense"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 text-[#00f2fe] border border-[#00f2fe]/30 text-xs font-mono font-medium transition-all"
-            title="Open ECE 515.2 Capstone Defense Presentation Deck"
-          >
-            <Presentation className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Defense Deck</span>
-          </Link>
-
           {/* User avatar */}
           <div className="relative">
             <button
@@ -251,15 +239,6 @@ export function Header({
                   <p className="font-medium text-white text-[13px] truncate">{technicianProfile.name}</p>
                   <p className="text-[11px] text-slate-500 truncate mt-0.5">{technicianProfile.matricNo}</p>
                 </div>
-
-                <Link
-                  href="/defense"
-                  onClick={() => setUserDropdownOpen(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#00f2fe]/10 text-[#00f2fe] hover:bg-[#00f2fe]/20 text-left transition-colors font-medium cursor-pointer"
-                >
-                  <Presentation className="w-3.5 h-3.5 text-[#00f2fe]" />
-                  Defense Deck (16 Slides)
-                </Link>
 
                 <button
                   onClick={() => {
