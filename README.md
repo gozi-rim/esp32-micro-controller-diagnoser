@@ -1,141 +1,386 @@
-# ESP32 Micro-Controller Diagnoser
+# NetDiag Expert
 
-> An open-source diagnostic platform for understanding, monitoring, and troubleshooting ESP32-based embedded systems.
+### An AI-powered expert system for diagnosing ESP32 microcontroller problems
 
-The **ESP32 Micro-Controller Diagnoser** is an open-source project exploring a more intelligent way to diagnose problems in ESP32 devices.
+**NetDiag Expert** is an open-source web-based diagnostic system that helps developers, students, and electronics enthusiasts troubleshoot common problems with ESP32 microcontrollers.
 
-Instead of relying entirely on raw serial logs, manual inspection, and trial-and-error debugging, the project aims to bring together **device telemetry, diagnostic checks, system state, and AI-assisted reasoning** into a single developer-friendly workflow.
+Instead of searching through scattered documentation, guessing at possible causes, or repeatedly testing hardware, NetDiag Expert guides the user through a structured diagnostic process.
 
-The goal is simple:
-
-**Make embedded-system debugging easier to understand, reproduce, and act on.**
-
----
-
-## Why This Exists
-
-Debugging embedded systems is fundamentally different from debugging ordinary software.
-
-A problem can originate from firmware, hardware, power, sensors, communication protocols, timing, memory, peripherals, or an interaction between several of these layers.
-
-When something goes wrong, developers often have to:
-
-* Inspect serial output
-* Reproduce the failure manually
-* Check sensor and peripheral values
-* Examine firmware behavior
-* Compare expected and actual system states
-* Search documentation and previous issues
-* Form hypotheses and test them one by one
-
-This project explores whether much of that process can be **structured and assisted by software**.
-
-The long-term vision is an open-source diagnostic workflow where an ESP32 can provide evidence about its own state and developers can use that evidence to understand what is happening and why.
+Describe the problem.
+Answer a few targeted questions.
+Follow the reasoning.
+Get a diagnosis and actionable repair steps.
 
 ---
 
-## Core Idea
+## The Problem
+
+ESP32 boards are inexpensive, powerful, and widely used in IoT, robotics, embedded systems, education, and electronics projects.
+
+But when something goes wrong, debugging can become surprisingly difficult.
+
+A simple symptom such as:
+
+> "My ESP32 keeps restarting."
+
+could be caused by:
+
+* Insufficient power
+* Brownout conditions
+* Incorrect GPIO configuration
+* Peripheral conflicts
+* Wi-Fi-related behavior
+* Strapping-pin misuse
+* Sensor communication problems
+* Firmware configuration
+* Hardware wiring
+
+The challenge is not simply finding information.
+
+**The challenge is knowing which information matters and what to check next.**
+
+NetDiag Expert addresses this by encoding embedded-systems troubleshooting knowledge into an interactive expert system.
+
+---
+
+## How It Works
+
+NetDiag Expert uses a **rule-based inference engine with forward chaining**.
+
+The process is:
 
 ```text
-             ┌──────────────────────┐
-             │      ESP32 Device    │
-             │                      │
-             │ Sensors / GPIO /     │
-             │ peripherals / state  │
-             └──────────┬───────────┘
-                        │
-                        ▼
-             ┌──────────────────────┐
-             │ Diagnostic Layer     │
-             │                      │
-             │ Telemetry            │
-             │ Health checks        │
-             │ Error detection      │
-             │ System state         │
-             └──────────┬───────────┘
-                        │
-                        ▼
-             ┌──────────────────────┐
-             │ Diagnostic Interface │
-             │                      │
-             │ Logs                │
-             │ Metrics             │
-             │ Device information  │
-             │ Diagnostic results  │
-             └──────────┬───────────┘
-                        │
-                        ▼
-             ┌──────────────────────┐
-             │ AI-Assisted Analysis │
-             │                      │
-             │ Evidence → Reasoning │
-             │ → Possible causes    │
-             │ → Next steps         │
-             └──────────────────────┘
+User reports a symptom
+        ↓
+Select diagnostic category
+        ↓
+Answer targeted questions
+        ↓
+System evaluates diagnostic rules
+        ↓
+Possible causes are narrowed down
+        ↓
+Root cause is identified
+        ↓
+Repair / troubleshooting procedure
 ```
 
-The important principle is that **AI should reason from actual device evidence**, rather than simply guessing what might be wrong.
+The system starts with known facts — the symptoms and answers provided by the user — and progressively applies rules until it reaches a diagnostic conclusion.
 
----
-
-## What the Project Is Exploring
-
-The project is being developed around several complementary areas:
-
-### 🔌 Embedded Diagnostics
-
-Collect useful information from an ESP32 and expose the state of the device in a way that is easier to inspect and understand.
-
-### 📊 System Observability
-
-Turn low-level device information into useful diagnostic signals instead of forcing developers to interpret raw output manually.
-
-### 🧪 Fault Investigation
-
-Provide a structured way to investigate potential failures and distinguish observations from assumptions.
-
-### 🤖 AI-Assisted Reasoning
-
-Explore how an AI system can help developers interpret diagnostic evidence, identify possible causes, and suggest useful next steps.
-
-### 🧑‍💻 Developer Experience
-
-Make the system understandable and useful not only to experienced embedded engineers, but also to students, makers, and developers learning embedded systems.
-
----
-
-## Project Structure
-
-The repository contains both the diagnostic application and the supporting project infrastructure.
+For example:
 
 ```text
-.
-├── app/                  # Next.js application
-├── components/           # Reusable UI components
-├── src/                  # Application/source logic
-├── data/                 # Diagnostic/project data
-├── public/                # Static assets
-├── .agents/               # Agent/AI development resources
-├── CLAUDE.md              # Claude-assisted development context
-├── package.json
-└── ...
+IF
+    ESP32 resets when Wi-Fi starts
+AND
+    power supply voltage is insufficient
+
+THEN
+    probable cause = brownout / power instability
 ```
 
-The web application provides the interface for interacting with and visualizing diagnostic information, while the broader project is designed to evolve toward deeper ESP32 integration.
+This approach makes the reasoning explicit rather than treating the diagnosis as a black box.
 
 ---
 
-## Getting Started
+# Diagnostic Knowledge Base
 
-### Prerequisites
+The current knowledge base covers **9 major ESP32 problem areas**:
 
-You will need:
+| Category       | Examples                                    |
+| -------------- | ------------------------------------------- |
+| Power          | Brownouts, unstable power, voltage problems |
+| Wi-Fi          | Connection and network problems             |
+| GPIO           | Pin configuration and usage problems        |
+| Antenna        | Wireless signal and antenna-related issues  |
+| I2C            | Sensor and I2C communication failures       |
+| SPI            | SPI peripheral communication problems       |
+| ADC            | Analog-to-digital conversion issues         |
+| Strapping Pins | Boot and pin-configuration conflicts        |
+| ESP-NOW        | ESP-NOW communication problems              |
 
-* Node.js
-* npm, pnpm, yarn, or Bun
-* An ESP32 development board for hardware-related functionality
+The system contains hundreds of diagnostic rules designed to connect observed symptoms with likely causes and recommended actions.
 
-### Install
+---
+
+# Features
+
+## 🔎 Diagnostic Console
+
+The primary troubleshooting interface.
+
+Users describe a hardware problem and answer a sequence of diagnostic questions. The system uses their responses to narrow down the possible causes.
+
+---
+
+## 🧠 Rule-Based Expert System
+
+The diagnostic engine uses a custom rule-based system rather than relying on an external AI model for its core reasoning.
+
+This makes the diagnostic logic:
+
+* Explicit
+* Inspectable
+* Reproducible
+* Deterministic
+* Easy to extend with additional rules
+
+The system uses **forward chaining** to move from observed facts toward conclusions.
+
+---
+
+## 📚 Knowledge Base
+
+Browse the diagnostic knowledge encoded into the application.
+
+The knowledge base organizes common ESP32 faults into understandable categories and provides the rules behind the diagnostic process.
+
+---
+
+## 📊 Diagnostic Dashboard
+
+The dashboard provides an overview of system information and diagnostic context.
+
+The current implementation includes simulated telemetry for demonstration purposes, allowing the interface and diagnostic workflow to be developed before deeper hardware integration.
+
+---
+
+## 📌 ESP32 Pinout Explorer
+
+An interactive ESP32 pinout view helps users understand GPIO functionality and identify potential pin-related problems.
+
+This is particularly useful for troubleshooting:
+
+* GPIO conflicts
+* Strapping-pin issues
+* Peripheral assignments
+* Incorrect pin usage
+
+---
+
+## 🖥️ Serial Monitor
+
+A simulated serial-monitor environment provides a developer-oriented view of device logs and diagnostic information.
+
+The long-term goal is to connect this workflow to real device output.
+
+---
+
+## 📝 Hardware Logs
+
+Diagnostic sessions and system events can be represented as structured logs, creating a foundation for reviewing previous troubleshooting attempts.
+
+---
+
+## 💬 AI Chat
+
+The application includes an optional conversational AI layer for follow-up questions.
+
+The distinction is intentional:
+
+**The expert system performs the core structured diagnosis.**
+
+**The AI layer helps the user understand and explore the diagnosis conversationally.**
+
+This prevents the diagnostic engine from becoming dependent on an opaque AI response.
+
+---
+
+## 📄 Diagnosis Reports
+
+A completed diagnostic session can produce a structured result containing information such as:
+
+* Probable root cause
+* Confidence
+* Severity
+* Diagnostic reasoning
+* Recommended fix
+* Relevant hardware/wiring notes
+
+The goal is to transform a troubleshooting session into something that can be understood and acted upon.
+
+---
+
+# Architecture
+
+The project is currently built around a web application architecture:
+
+```text
+┌─────────────────────────────────────┐
+│           NetDiag Expert UI         │
+│                                     │
+│  Diagnostic Console                 │
+│  Dashboard                          │
+│  Knowledge Base                     │
+│  Pinout Explorer                    │
+│  Hardware Logs                      │
+│  Serial Monitor                     │
+└─────────────────┬───────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────┐
+│       Diagnostic / Rule Engine      │
+│                                     │
+│  Facts → Rules → Inference → Result │
+└─────────────────┬───────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────┐
+│          Diagnosis Report           │
+│                                     │
+│  Cause                              │
+│  Confidence                         │
+│  Severity                           │
+│  Recommended Actions                │
+└─────────────────────────────────────┘
+                  │
+                  ▼
+       Optional AI Conversation
+```
+
+The architecture is designed so that the deterministic diagnostic engine can remain separate from conversational AI.
+
+---
+
+# Technology
+
+The project currently uses:
+
+* **Next.js**
+* **React**
+* **TypeScript**
+* **Tailwind CSS**
+* Custom rule-based diagnostic engine
+* Forward-chaining inference
+* Optional external language-model integration
+
+The core diagnostic functionality does **not** require an external AI model.
+
+---
+
+# Project Background
+
+NetDiag Expert originated as a group project for:
+
+**ECE 515.2 — Introduction to Artificial Intelligence**
+**Department of Electronic Engineering**
+**University of Port Harcourt**
+**Academic Session: 2024/2025**
+
+The project was created to demonstrate the practical application of an **Expert System** — an AI approach that captures domain knowledge as rules and uses those rules to solve problems.
+
+Rather than building a generic example such as a medical or financial expert system, the project applies the concept to a practical engineering problem:
+
+> **How can an intelligent system help someone troubleshoot an ESP32?**
+
+This became the foundation for NetDiag Expert.
+
+---
+
+# Why a Rule-Based Expert System?
+
+Modern AI often relies on large language models, but not every problem benefits from an opaque generative approach.
+
+Hardware diagnosis is an interesting case.
+
+A useful diagnostic system should be able to distinguish between:
+
+**Observed fact**
+
+> The board resets when Wi-Fi starts.
+
+and:
+
+**Hypothesis**
+
+> The power supply may be insufficient.
+
+and:
+
+**Recommended investigation**
+
+> Check the supply voltage and current capability under Wi-Fi load.
+
+A rule-based system makes these relationships explicit.
+
+This creates an important foundation for future AI-assisted diagnostics where a language model can explain or interact with the diagnostic process without replacing the underlying evidence and rules.
+
+---
+
+# Future Direction
+
+NetDiag Expert is currently a software-based diagnostic prototype.
+
+The longer-term vision is to move from **simulated diagnostic context toward real ESP32 device integration**.
+
+Potential future directions include:
+
+* Real serial communication with ESP32 hardware
+* Live telemetry collection
+* Automatic device health checks
+* Real-time sensor diagnostics
+* Firmware/log analysis
+* Automated fault detection
+* Persistent diagnostic histories
+* Hardware-aware AI reasoning
+* Expanded knowledge bases
+* Community-contributed diagnostic rules
+* Support for additional ESP32 variants and peripherals
+
+The ultimate goal is to create a diagnostic system where the user does not have to manually translate raw hardware information into a troubleshooting strategy.
+
+Instead:
+
+```text
+ESP32
+  ↓
+Evidence
+  ↓
+Diagnostic Engine
+  ↓
+Reasoning
+  ↓
+Explanation
+  ↓
+Recommended Action
+```
+
+---
+
+# Current Status
+
+🚧 **Active development / prototype**
+
+The current version demonstrates the expert-system concept, diagnostic workflow, knowledge base, and developer interface.
+
+Some hardware telemetry and serial-monitor functionality is currently simulated for demonstration purposes.
+
+The next stage of the project is deeper integration between the diagnostic software and real ESP32 hardware.
+
+---
+
+# Contributing
+
+Contributions and ideas are welcome.
+
+Areas where contributors can help include:
+
+* ESP32 troubleshooting rules
+* Embedded systems knowledge
+* Diagnostic algorithms
+* TypeScript / React development
+* UI/UX
+* Testing
+* Documentation
+* ESP32 hardware integration
+* AI-assisted diagnostics
+* Additional fault categories
+
+If you have encountered an ESP32 problem that should be represented in the knowledge base, an issue or pull request is welcome.
+
+---
+
+# Development
 
 Clone the repository:
 
@@ -151,166 +396,65 @@ Install dependencies:
 npm install
 ```
 
-### Run the development server
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:3000
 ```
 
-The application will automatically reload as you make changes.
-
 ---
 
-## Development
-
-The project uses **Next.js** and **TypeScript** for the diagnostic interface.
-
-The architecture is intentionally being developed to allow the web application, diagnostic logic, embedded firmware, and AI-assisted analysis to evolve independently while remaining connected through clearly defined interfaces.
-
-As the project matures, these boundaries will become increasingly important for testing and community contributions.
-
----
-
-## Roadmap
-
-The project is still under active development.
-
-### Current direction
-
-* [x] Establish the diagnostic application foundation
-* [x] Build the initial project architecture
-* [x] Establish reusable interface components
-* [x] Begin defining the diagnostic workflow
-* [ ] Expand ESP32 device integration
-* [ ] Add richer device telemetry
-* [ ] Build automated health checks
-* [ ] Develop structured fault detection
-* [ ] Improve diagnostic visualization
-* [ ] Add stronger test coverage
-* [ ] Develop AI-assisted diagnostic reasoning
-* [ ] Create reproducible diagnostic reports
-* [ ] Improve contributor documentation
-* [ ] Add examples for common ESP32 failures
-
----
-
-## Vision
-
-The long-term goal is not to build another dashboard.
-
-It is to build an **open diagnostic layer for embedded systems**.
-
-Imagine connecting an ESP32, reproducing a problem, and receiving a structured explanation such as:
+# Project Structure
 
 ```text
-Observed:
-• Sensor communication stopped responding
-• I2C bus activity is present
-• Device firmware is still running
-• Error rate increased immediately before failure
-
-Possible causes:
-1. Peripheral communication failure
-2. Sensor power instability
-3. Incorrect bus configuration
-
-Recommended next checks:
-→ Verify sensor power
-→ Inspect I2C address/configuration
-→ Compare bus behavior before and after failure
+.
+├── .agents/
+│   └── skills/
+├── components/
+├── data/
+├── src/
+├── AGENTS.md
+├── CLAUDE.md
+├── Project_Explanation.md
+├── Final_Project_Defence.pptx
+├── generate_pptx.py
+├── prd.md
+├── package.json
+└── README.md
 ```
 
-The system should make it easier for developers to go from:
-
-**"Something is broken."**
-
-to:
-
-**"Here is what the device observed, here are the most likely causes, and here is what I should investigate next."**
-
 ---
 
-## Open Source
+# Vision
 
-This project is intentionally open source because embedded debugging is a problem that benefits from shared knowledge.
+**NetDiag Expert is an experiment in making embedded troubleshooting more intelligent, explainable, and accessible.**
 
-Different boards, sensors, firmware architectures, and hardware configurations produce different failure modes. A community-driven diagnostic system could eventually build a much richer collection of troubleshooting knowledge than any single developer could create alone.
+The project starts with a simple idea:
 
-Contributions, ideas, experiments, bug reports, and discussions are welcome.
+> An ESP32 problem should not require an expert sitting beside you to begin diagnosing it.
 
-If you work with ESP32, embedded systems, IoT, robotics, firmware, developer tooling, or AI-assisted development, there is an opportunity to contribute.
-
----
-
-## Why AI?
-
-AI is not intended to replace the developer or hide the underlying evidence.
-
-The goal is the opposite.
-
-The diagnostic system should expose the evidence first and use AI to help developers **reason about that evidence**.
-
-That means separating:
-
-* **Observed facts**
-* **Detected anomalies**
-* **Possible explanations**
-* **Confidence**
-* **Recommended next actions**
-
-This distinction is important because an AI-generated explanation is only useful when developers can understand *why* the system reached that conclusion.
-
----
-
-## Contributing
-
-Contributions are welcome.
-
-Potential areas include:
-
-* ESP32 firmware
-* Diagnostic algorithms
-* Hardware integrations
-* Sensor support
-* UI/UX
-* TypeScript/Next.js development
-* Testing
-* Documentation
-* AI-assisted diagnostics
-* Embedded debugging workflows
-
-If you find a bug or have an idea for improving the diagnostic workflow, open an issue or submit a pull request.
-
----
-
-## Status
-
-🚧 **Early development**
-
-This project is currently evolving from its initial foundation toward a more complete ESP32 diagnostic platform.
-
-The architecture, diagnostic methodology, and AI-assisted components are expected to evolve as the project is tested against real embedded-system problems.
+By combining structured engineering knowledge, deterministic inference, interactive troubleshooting, and eventually real hardware telemetry and AI-assisted reasoning, NetDiag Expert aims to make embedded debugging easier to understand and easier to perform.
 
 ---
 
 ## Author
 
-Built and maintained by **Gozi Rim**.
+**Gozi Rim**
 
 GitHub:
 https://github.com/gozi-rim
 
-Project:
+Repository:
 https://github.com/gozi-rim/esp32-micro-controller-diagnoser
 
 ---
 
 ## License
 
-See the repository license for usage and contribution terms.
+See the repository license for the applicable terms.
